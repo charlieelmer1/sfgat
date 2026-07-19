@@ -1,0 +1,6 @@
+{
+  "name": "SFGA EMS Command Portal",
+  "description": "Clinical operations, medical protocols, and administrative control portal for Six Flags Great Adventure EMS.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
