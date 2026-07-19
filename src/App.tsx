@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Shield, LayoutDashboard, BookOpen, FileText, Phone, Hash, Calendar, CloudSun, Calculator, ShieldCheck, LogOut, Menu, X, Clock } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 
@@ -40,6 +40,9 @@ import {
 } from "./types";
 
 export default function App() {
+  // Polling / Sync guard ref to prevent feedback loops
+  const isSyncingRef = useRef(false);
+
   // Authentication State
   const [userRole, setUserRole] = useState<"EMT" | "Supervisor" | null>(() => {
     const saved = localStorage.getItem("sfga_ems_role");
@@ -68,6 +71,7 @@ export default function App() {
 
   // Fetch full state from backend on mount
   useEffect(() => {
+    isSyncingRef.current = true;
     fetch("/api/state")
       .then((res) => res.json())
       .then((data) => {
@@ -86,6 +90,9 @@ export default function App() {
           if (data.predefinedSupervisorsList) setPredefinedSupervisorsList(data.predefinedSupervisorsList);
         }
         setIsLoaded(true);
+        setTimeout(() => {
+          isSyncingRef.current = false;
+        }, 300);
       })
       .catch((err) => {
         console.error("Error loading server state, falling back to local storage", err);
@@ -118,13 +125,56 @@ export default function App() {
           console.error(e);
         }
         setIsLoaded(true);
+        setTimeout(() => {
+          isSyncingRef.current = false;
+        }, 300);
       });
   }, []);
+
+  // Polling state from server for real-time multi-device synchronization
+  useEffect(() => {
+    if (!isLoaded) return;
+
+    const interval = setInterval(() => {
+      fetch("/api/state")
+        .then((res) => {
+          if (!res.ok) throw new Error("Sync fetch failed");
+          return res.json();
+        })
+        .then((data) => {
+          if (data) {
+            isSyncingRef.current = true;
+            if (data.parkHours) setParkHours(data.parkHours);
+            if (data.announcement !== undefined) setAnnouncement(data.announcement);
+            if (data.roster) setRoster(data.roster);
+            if (data.protocols) setProtocols(data.protocols);
+            if (data.sops) setSops(data.sops);
+            if (data.contacts) setContacts(data.contacts);
+            if (data.extensions) setExtensions(data.extensions);
+            if (data.tenCodes) setTenCodes(data.tenCodes);
+            if (data.signals) setSignals(data.signals);
+            if (data.schedule) setSchedule(data.schedule);
+            if (data.weatherData) setWeatherData(data.weatherData);
+            if (data.predefinedSupervisorsList) setPredefinedSupervisorsList(data.predefinedSupervisorsList);
+
+            setTimeout(() => {
+              isSyncingRef.current = false;
+            }, 300);
+          }
+        })
+        .catch((err) => {
+          console.warn("Real-time background sync failed:", err);
+        });
+    }, 4000); // Poll every 4 seconds
+
+    return () => clearInterval(interval);
+  }, [isLoaded]);
 
   // Sync states with LocalStorage and Server
   useEffect(() => {
     if (!isLoaded) return;
     localStorage.setItem("sfga_ems_hours", JSON.stringify(parkHours));
+    if (isSyncingRef.current) return;
     fetch("/api/state", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -135,6 +185,7 @@ export default function App() {
   useEffect(() => {
     if (!isLoaded) return;
     localStorage.setItem("sfga_ems_announcement", announcement);
+    if (isSyncingRef.current) return;
     fetch("/api/state", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -145,6 +196,7 @@ export default function App() {
   useEffect(() => {
     if (!isLoaded) return;
     localStorage.setItem("sfga_ems_roster", JSON.stringify(roster));
+    if (isSyncingRef.current) return;
     fetch("/api/state", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -155,6 +207,7 @@ export default function App() {
   useEffect(() => {
     if (!isLoaded) return;
     localStorage.setItem("sfga_ems_protocols", JSON.stringify(protocols));
+    if (isSyncingRef.current) return;
     fetch("/api/state", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -165,6 +218,7 @@ export default function App() {
   useEffect(() => {
     if (!isLoaded) return;
     localStorage.setItem("sfga_ems_sops", JSON.stringify(sops));
+    if (isSyncingRef.current) return;
     fetch("/api/state", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -175,6 +229,7 @@ export default function App() {
   useEffect(() => {
     if (!isLoaded) return;
     localStorage.setItem("sfga_ems_contacts", JSON.stringify(contacts));
+    if (isSyncingRef.current) return;
     fetch("/api/state", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -185,6 +240,7 @@ export default function App() {
   useEffect(() => {
     if (!isLoaded) return;
     localStorage.setItem("sfga_ems_extensions", JSON.stringify(extensions));
+    if (isSyncingRef.current) return;
     fetch("/api/state", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -195,6 +251,7 @@ export default function App() {
   useEffect(() => {
     if (!isLoaded) return;
     localStorage.setItem("sfga_ems_tencodes", JSON.stringify(tenCodes));
+    if (isSyncingRef.current) return;
     fetch("/api/state", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -205,6 +262,7 @@ export default function App() {
   useEffect(() => {
     if (!isLoaded) return;
     localStorage.setItem("sfga_ems_signals", JSON.stringify(signals));
+    if (isSyncingRef.current) return;
     fetch("/api/state", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -215,6 +273,7 @@ export default function App() {
   useEffect(() => {
     if (!isLoaded) return;
     localStorage.setItem("sfga_ems_schedule", JSON.stringify(schedule));
+    if (isSyncingRef.current) return;
     fetch("/api/state", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -225,6 +284,7 @@ export default function App() {
   useEffect(() => {
     if (!isLoaded) return;
     localStorage.setItem("sfga_ems_weather", JSON.stringify(weatherData));
+    if (isSyncingRef.current) return;
     fetch("/api/state", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -235,6 +295,7 @@ export default function App() {
   useEffect(() => {
     if (!isLoaded) return;
     localStorage.setItem("sfga_ems_predefined_supervisors", JSON.stringify(predefinedSupervisorsList));
+    if (isSyncingRef.current) return;
     fetch("/api/state", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
