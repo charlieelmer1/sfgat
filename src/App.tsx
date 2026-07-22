@@ -72,7 +72,7 @@ export default function App() {
   // Fetch full state from backend on mount
   useEffect(() => {
     isSyncingRef.current = true;
-    fetch("/api/state")
+    fetch("/api/state?t=" + Date.now(), { cache: "no-store" })
       .then((res) => res.json())
       .then((data) => {
         if (data) {
@@ -136,7 +136,7 @@ export default function App() {
     if (!isLoaded) return;
 
     const interval = setInterval(() => {
-      fetch("/api/state")
+      fetch("/api/state?t=" + Date.now(), { cache: "no-store" })
         .then((res) => {
           if (!res.ok) throw new Error("Sync fetch failed");
           return res.json();
