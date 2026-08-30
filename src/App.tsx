@@ -595,6 +595,7 @@ export default function App() {
                   weatherData={weatherData}
                   onNavigateToTab={(tabId) => setActiveTab(tabId)}
                   staffNamesList={staffNamesList}
+                  onUpdateStaffNamesList={handleUpdateStaffNamesList}
                 />
               )}
 
