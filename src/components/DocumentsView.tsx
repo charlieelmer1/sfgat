@@ -1,6 +1,8 @@
 import React, { useState, useRef } from "react";
-import { BookOpen, FileText, Plus, Trash2, Edit, Search, FileDown, Image, Paperclip, Upload, Eye, EyeOff, Save } from "lucide-react";
+import { BookOpen, FileText, Plus, Trash2, Edit, Search, FileDown, Image, Paperclip, Upload, Eye, EyeOff, Save, FileCheck, Smartphone } from "lucide-react";
 import { DocumentItem } from "../types";
+import PdfViewer from "./PdfViewer";
+import { generateProcedurePdf } from "../utils/pdfGenerator";
 
 interface DocumentsViewProps {
   userRole: "EMT" | "Supervisor";
@@ -53,6 +55,9 @@ export default function DocumentsView({
   );
 
   const selectedDoc = filteredDocs.find((doc) => doc.id === selectedDocId) || filteredDocs[0];
+
+  // Document presentation view mode: "brief" (formatted text) vs "pdf" (interactive PDF canvas viewer)
+  const [docDisplayMode, setDocDisplayMode] = useState<"brief" | "pdf">("brief");
 
   // Editor states
   const [isEditing, setIsEditing] = useState(false);
@@ -416,25 +421,41 @@ export default function DocumentsView({
                 </span>
                 
                 {attachmentName ? (
-                  <div className="flex items-center justify-between p-3 bg-white border border-slate-200 rounded">
-                    <div className="flex items-center gap-2 min-w-0">
-                      {attachmentType === "image" ? (
-                        <Image className="w-5 h-5 text-amber-500 shrink-0" />
-                      ) : (
-                        <FileText className="w-5 h-5 text-blue-600 shrink-0" />
-                      )}
-                      <div className="truncate">
-                        <span className="text-xs text-slate-800 font-medium block truncate">{attachmentName}</span>
-                        <span className="text-[10px] text-slate-400 font-mono uppercase">{attachmentType} file loaded</span>
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between p-3 bg-white border border-slate-200 rounded shadow-sm">
+                      <div className="flex items-center gap-2 min-w-0">
+                        {attachmentType === "image" ? (
+                          <Image className="w-5 h-5 text-amber-500 shrink-0" />
+                        ) : (
+                          <FileText className="w-5 h-5 text-red-600 shrink-0" />
+                        )}
+                        <div className="truncate">
+                          <span className="text-xs text-slate-800 font-medium block truncate">{attachmentName}</span>
+                          <span className="text-[10px] text-slate-400 font-mono uppercase">{attachmentType} file attached</span>
+                        </div>
                       </div>
+                      <button
+                        type="button"
+                        onClick={removeAttachment}
+                        className="text-xs text-red-600 hover:text-red-800 transition-colors uppercase font-mono font-bold cursor-pointer"
+                      >
+                        Remove
+                      </button>
                     </div>
-                    <button
-                      type="button"
-                      onClick={removeAttachment}
-                      className="text-xs text-red-600 hover:text-red-800 transition-colors uppercase font-mono font-bold"
-                    >
-                      Remove
-                    </button>
+
+                    {attachmentType === "pdf" && attachmentData && (
+                      <div className="border border-slate-200 rounded p-2 bg-slate-50">
+                        <span className="text-[10px] text-slate-500 font-mono uppercase font-bold block mb-1">
+                          Live PDF Upload Preview:
+                        </span>
+                        <PdfViewer
+                          pdfData={attachmentData}
+                          fileName={attachmentName}
+                          title={editTitle || "Uploaded Procedure Attachment"}
+                          className="max-h-[350px]"
+                        />
+                      </div>
+                    )}
                   </div>
                 ) : (
                   <div
@@ -506,6 +527,11 @@ export default function DocumentsView({
                         {selectedDoc.type === "procedures" ? "SF Procedure Authority" : "Medical Direction Directive"}
                       </span>
                     )}
+                    {selectedDoc.attachmentType === "pdf" && (
+                      <span className="bg-emerald-50 text-emerald-800 text-[9px] px-1.5 py-0.5 rounded font-mono font-bold border border-emerald-200 flex items-center gap-1">
+                        <FileCheck className="w-3 h-3 text-emerald-600" /> PDF ATTACHED
+                      </span>
+                    )}
                   </div>
                   <h3 className="text-xl md:text-2xl font-extrabold text-slate-900 tracking-tight leading-snug">
                     {selectedDoc.title}
@@ -515,73 +541,122 @@ export default function DocumentsView({
                   </span>
                 </div>
 
-                {isSupervisor && (
-                  <div className="flex gap-2 shrink-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  {/* View Mode Toggle: Brief vs PDF Preview */}
+                  <div className="flex bg-slate-100 p-1 rounded border border-slate-200 text-xs font-semibold">
                     <button
-                      onClick={() => handleStartEdit(selectedDoc)}
-                      className="p-2 bg-white hover:bg-slate-50 text-slate-600 hover:text-slate-900 border border-slate-200 rounded cursor-pointer transition-colors"
-                      title="Edit Entry"
+                      type="button"
+                      onClick={() => setDocDisplayMode("brief")}
+                      className={`px-3 py-1 rounded text-center cursor-pointer transition-all ${
+                        docDisplayMode === "brief"
+                          ? "bg-white text-slate-900 shadow-sm font-bold"
+                          : "text-slate-500 hover:text-slate-800"
+                      }`}
                     >
-                      <Edit className="w-4 h-4" />
+                      Brief View
                     </button>
                     <button
-                      onClick={() => handleDelete(selectedDoc.id)}
-                      className="p-2 bg-white hover:bg-red-50 border border-slate-200 hover:border-red-200 text-slate-400 hover:text-red-700 rounded cursor-pointer transition-colors"
-                      title="Delete Entry"
+                      type="button"
+                      onClick={() => setDocDisplayMode("pdf")}
+                      className={`px-3 py-1 rounded text-center cursor-pointer transition-all flex items-center gap-1 ${
+                        docDisplayMode === "pdf"
+                          ? "bg-white text-blue-900 shadow-sm font-bold"
+                          : "text-slate-500 hover:text-slate-800"
+                      }`}
                     >
-                      <Trash2 className="w-4 h-4" />
+                      <FileText className="w-3.5 h-3.5 text-red-600" /> PDF Preview
                     </button>
                   </div>
-                )}
-              </div>
 
-              {/* Reading Content Pane */}
-              <div className="text-sm text-slate-800 leading-relaxed font-sans whitespace-pre-wrap font-medium">
-                {selectedDoc.content}
-              </div>
-
-              {/* Render attachments dynamically */}
-              {selectedDoc.attachmentName && (
-                <div className="mt-8 pt-6 border-t border-slate-200 space-y-4">
-                  <h4 className="text-xs uppercase font-mono font-bold tracking-wider text-slate-400">
-                    Linked Attachment Document:
-                  </h4>
-                  
-                  {selectedDoc.attachmentType === "image" && selectedDoc.attachmentData ? (
-                    <div className="bg-slate-50 p-2.5 border border-slate-200 rounded overflow-hidden flex justify-center max-h-[450px]">
-                      <img
-                        src={selectedDoc.attachmentData}
-                        alt={selectedDoc.attachmentName}
-                        referrerPolicy="no-referrer"
-                        className="rounded object-contain max-w-full h-auto"
-                      />
-                    </div>
-                  ) : selectedDoc.attachmentType === "pdf" ? (
-                    <div className="bg-slate-50 border border-slate-200 p-4 rounded flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3.5 shadow-inner">
-                      <div className="flex items-center gap-3">
-                        <div className="bg-red-50 p-2 rounded border border-red-200">
-                          <FileText className="w-6 h-6 text-red-600" />
-                        </div>
-                        <div>
-                          <span className="text-xs text-slate-800 font-bold block leading-normal">{selectedDoc.attachmentName}</span>
-                          <span className="text-[10px] text-slate-400 font-mono">ADOBE PDF DOCUMENT (BASE64 ARCHIVED)</span>
-                        </div>
-                      </div>
-                      <a
-                        href={selectedDoc.attachmentData || "#"}
-                        download={selectedDoc.attachmentName}
-                        className="bg-white hover:bg-slate-50 text-slate-700 hover:text-slate-900 px-3.5 py-2 rounded text-xs font-mono font-bold border border-slate-200 flex items-center gap-1 cursor-pointer transition-all shrink-0"
+                  {isSupervisor && (
+                    <div className="flex gap-1.5 shrink-0">
+                      <button
+                        onClick={() => handleStartEdit(selectedDoc)}
+                        className="p-2 bg-white hover:bg-slate-50 text-slate-600 hover:text-slate-900 border border-slate-200 rounded cursor-pointer transition-colors"
+                        title="Edit Entry"
                       >
-                        <FileDown className="w-4.5 h-4.5" /> DOWNLOAD PDF
-                      </a>
+                        <Edit className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => handleDelete(selectedDoc.id)}
+                        className="p-2 bg-white hover:bg-red-50 border border-slate-200 hover:border-red-200 text-slate-400 hover:text-red-700 rounded cursor-pointer transition-colors"
+                        title="Delete Entry"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
                     </div>
-                  ) : selectedDoc.attachmentType === "text" && selectedDoc.attachmentData ? (
-                    <div className="bg-slate-50 p-4 border border-slate-200 rounded text-xs font-mono text-slate-700 overflow-x-auto max-h-[300px]">
-                      <span className="text-[10px] text-slate-400 uppercase font-bold block mb-2">Embedded Raw Text:</span>
-                      {selectedDoc.attachmentData}
-                    </div>
-                  ) : null}
+                  )}
                 </div>
+              </div>
+
+              {/* Main Content Area: Switch between Brief View and Full PDF Preview */}
+              {docDisplayMode === "pdf" ? (
+                <div className="space-y-3 pt-2">
+                  <div className="flex items-center justify-between text-xs text-slate-500 font-mono">
+                    <span className="flex items-center gap-1.5">
+                      <Smartphone className="w-3.5 h-3.5 text-blue-600" />
+                      Mobile & Laptop Optimized PDF Canvas Engine
+                    </span>
+                    <span className="text-[11px] text-slate-400">
+                      {selectedDoc.attachmentName || "Standard Formatted Clinical PDF"}
+                    </span>
+                  </div>
+
+                  <PdfViewer
+                    pdfData={
+                      selectedDoc.attachmentType === "pdf" && selectedDoc.attachmentData
+                        ? selectedDoc.attachmentData
+                        : generateProcedurePdf(selectedDoc)
+                    }
+                    fileName={selectedDoc.attachmentName || `${selectedDoc.title.replace(/\s+/g, "_")}.pdf`}
+                    title={selectedDoc.title}
+                  />
+                </div>
+              ) : (
+                <>
+                  {/* Reading Content Pane */}
+                  <div className="text-sm text-slate-800 leading-relaxed font-sans whitespace-pre-wrap font-medium">
+                    {selectedDoc.content}
+                  </div>
+
+                  {/* Render attachments dynamically */}
+                  {selectedDoc.attachmentName && (
+                    <div className="mt-8 pt-6 border-t border-slate-200 space-y-4">
+                      <div className="flex items-center justify-between">
+                        <h4 className="text-xs uppercase font-mono font-bold tracking-wider text-slate-400">
+                          Linked Attachment Document:
+                        </h4>
+                        <span className="text-[10px] font-mono text-slate-400 uppercase">
+                          Format: {selectedDoc.attachmentType}
+                        </span>
+                      </div>
+                      
+                      {selectedDoc.attachmentType === "image" && selectedDoc.attachmentData ? (
+                        <div className="bg-slate-50 p-2.5 border border-slate-200 rounded overflow-hidden flex justify-center max-h-[450px]">
+                          <img
+                            src={selectedDoc.attachmentData}
+                            alt={selectedDoc.attachmentName}
+                            referrerPolicy="no-referrer"
+                            className="rounded object-contain max-w-full h-auto"
+                          />
+                        </div>
+                      ) : selectedDoc.attachmentType === "pdf" && selectedDoc.attachmentData ? (
+                        <div className="space-y-3">
+                          <PdfViewer
+                            pdfData={selectedDoc.attachmentData}
+                            fileName={selectedDoc.attachmentName}
+                            title={selectedDoc.title}
+                          />
+                        </div>
+                      ) : selectedDoc.attachmentType === "text" && selectedDoc.attachmentData ? (
+                        <div className="bg-slate-50 p-4 border border-slate-200 rounded text-xs font-mono text-slate-700 overflow-x-auto max-h-[300px]">
+                          <span className="text-[10px] text-slate-400 uppercase font-bold block mb-2">Embedded Raw Text:</span>
+                          {selectedDoc.attachmentData}
+                        </div>
+                      ) : null}
+                    </div>
+                  )}
+                </>
               )}
 
             </div>

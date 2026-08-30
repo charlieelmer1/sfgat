@@ -1,3 +1,5 @@
+import { generateProcedurePdf } from "./utils/pdfGenerator";
+
 export interface ParkHours {
   themePark: string;
   waterPark: string;
@@ -150,6 +152,26 @@ export const INITIAL_PROTOCOLS: DocumentItem[] = [
     type: "direction",
     category: "Allergic / Immunological",
     updatedAt: "2026-05-12",
+    attachmentName: "SFGA_Directive_Anaphylaxis_Management.pdf",
+    attachmentType: "pdf",
+    attachmentData: generateProcedurePdf({
+      title: "Anaphylaxis & Severe Allergic Reactions",
+      type: "direction",
+      category: "Allergic / Immunological",
+      updatedAt: "2026-05-12",
+      content: `Clinical Presentation: Dyspnea, wheezing, stridor, urticaria (hives), pruritus, hypotension, tachycardia, or swelling of the face, lips, or tongue.
+
+Immediate Actions:
+1. Assess Airway, Breathing, and Circulation (ABCs).
+2. Administer high-flow Oxygen via Non-Rebreather Mask (12-15 L/min).
+3. If anaphylaxis is present (involvement of 2 or more body systems, or hypotension/airway swelling):
+   - Administer Epinephrine 1:1,000 (0.3 mg IM in lateral thigh) for adults.
+   - Administer Epinephrine 1:1,000 (0.15 mg IM) for pediatric patients (<30kg).
+4. Monitor vital signs every 5 minutes.
+5. Establish IV access en route or on-scene if ALS is present.
+6. Administer Albuterol (2.5 mg via nebulizer) if bronchospasm persists.
+7. Request ALS intercept if not already on-scene. Do not delay transport.`
+    }),
     content: `Clinical Presentation: Dyspnea, wheezing, stridor, urticaria (hives), pruritus, hypotension, tachycardia, or swelling of the face, lips, or tongue.
 
 Immediate Actions:
@@ -169,6 +191,31 @@ Immediate Actions:
     type: "procedures",
     category: "Environmental",
     updatedAt: "2026-06-01",
+    attachmentName: "SFGA_SOP_Heat_Stroke_Cooling.pdf",
+    attachmentType: "pdf",
+    attachmentData: generateProcedurePdf({
+      title: "Heat-Related Emergencies & Heat Stroke",
+      type: "procedures",
+      category: "Environmental",
+      updatedAt: "2026-06-01",
+      content: `Six Flags Great Adventure Summer Environmental SOP:
+With high ambient temperature and high humidity in the park:
+
+Heat Exhaustion Symptoms: Heavy sweating, pale skin, muscle cramps, fatigue, headache, dizziness, nausea/vomiting. Normal mental status.
+Treatment:
+1. Move patient to First Aid Station A/C immediately.
+2. Remove tight/excess clothing.
+3. Apply cool, damp cloths. Spray cool water.
+4. Provide active oral hydration (water or electrolyte drinks) if patient is fully conscious and cooperative.
+
+Heat Stroke Symptoms: High body temp (>103°F), hot/dry or heavily sweating skin, altered mental status (confusion, combativeness, lethargy), seizure, coma.
+Treatment:
+1. Medical Emergency! Request immediate backup and transport.
+2. Active Cooling: Apply ice packs to cervical, axillary, and inguinal regions. Fanning with high-velocity air.
+3. Administer high-flow Oxygen.
+4. Establish IV access (ALS) and administer cool Normal Saline bolus (20 mL/kg up to 1L).
+5. Do NOT give anything by mouth.`
+    }),
     content: `Six Flags Great Adventure Summer Environmental SOP:
 With high ambient temperature and high humidity in the park:
 
@@ -193,6 +240,22 @@ Treatment:
     type: "procedures",
     category: "Trauma",
     updatedAt: "2026-04-10",
+    attachmentName: "SFGA_Clinical_Splinting_PMS_Protocol.pdf",
+    attachmentType: "pdf",
+    attachmentData: generateProcedurePdf({
+      title: "Traumatic Fractures and Extremity Splinting",
+      type: "procedures",
+      category: "Trauma",
+      updatedAt: "2026-04-10",
+      content: `Standard Splinting Procedure:
+1. Expose the injury site. Assess distal sensory, motor, and circulatory function (PMS: Pulse, Motor, Sensory) BEFORE splinting.
+2. Cover open wounds with sterile dressings before applying splint.
+3. Splint the joint above and below the fracture site.
+4. Align severely angulated fractures with gentle traction only if pulse is absent and transport is delayed. If resistance is met, splint in the position of deformity.
+5. Immobilize with cardboard splint, SAM splint, or vacuum splint. Ensure not too tight.
+6. Re-assess PMS immediately AFTER splinting and document.
+7. Apply cold pack to the site to reduce swelling and pain.`
+    }),
     content: `Standard Splinting Procedure:
 1. Expose the injury site. Assess distal sensory, motor, and circulatory function (PMS: Pulse, Motor, Sensory) BEFORE splinting.
 2. Cover open wounds with sterile dressings before applying splint.
