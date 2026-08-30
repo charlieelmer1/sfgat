@@ -40,6 +40,7 @@ import {
   INITIAL_SIGNALS,
   INITIAL_SCHEDULE,
   INITIAL_WEATHER,
+  INITIAL_STAFF_NAMES,
 } from "./types";
 
 export default function App() {
@@ -69,6 +70,7 @@ export default function App() {
   const [schedule, setSchedule] = useState<WeeklySchedule>(INITIAL_SCHEDULE);
   const [weatherData, setWeatherData] = useState<WeatherData>(INITIAL_WEATHER);
   const [predefinedSupervisorsList, setPredefinedSupervisorsList] = useState<SupervisorChoice[]>(PREDEFINED_SUPERVISORS);
+  const [staffNamesList, setStaffNamesList] = useState<string[]>(INITIAL_STAFF_NAMES);
 
   const [isLoaded, setIsLoaded] = useState(false);
   const [firestoreConnected, setFirestoreConnected] = useState(false);
@@ -96,6 +98,7 @@ export default function App() {
           if (data.schedule) setSchedule(data.schedule);
           if (data.weatherData) setWeatherData(data.weatherData);
           if (data.predefinedSupervisorsList) setPredefinedSupervisorsList(data.predefinedSupervisorsList);
+          if (data.staffNamesList) setStaffNamesList(data.staffNamesList);
           
           setIsLoaded(true);
           setTimeout(() => {
@@ -116,6 +119,7 @@ export default function App() {
             schedule: INITIAL_SCHEDULE,
             weatherData: INITIAL_WEATHER,
             predefinedSupervisorsList: PREDEFINED_SUPERVISORS,
+            staffNamesList: INITIAL_STAFF_NAMES,
             updatedAt: new Date().toISOString(),
           };
           setDoc(docRef, initialState).catch(console.error);
@@ -142,6 +146,7 @@ export default function App() {
               if (data.schedule) setSchedule(data.schedule);
               if (data.weatherData) setWeatherData(data.weatherData);
               if (data.predefinedSupervisorsList) setPredefinedSupervisorsList(data.predefinedSupervisorsList);
+              if (data.staffNamesList) setStaffNamesList(data.staffNamesList);
             }
             setIsLoaded(true);
           })
@@ -241,6 +246,11 @@ export default function App() {
     saveToCloudAndLocal("predefinedSupervisorsList", predefinedSupervisorsList, "sfga_ems_predefined_supervisors");
   }, [predefinedSupervisorsList, isLoaded]);
 
+  useEffect(() => {
+    if (!isLoaded) return;
+    saveToCloudAndLocal("staffNamesList", staffNamesList, "sfga_ems_staff_names");
+  }, [staffNamesList, isLoaded]);
+
   // Auth Operations
   const handleLoginSuccess = (role: "EMT" | "Supervisor") => {
     setUserRole(role);
@@ -275,6 +285,10 @@ export default function App() {
 
   const handleUpdatePredefinedSupervisorsList = (list: SupervisorChoice[]) => {
     setPredefinedSupervisorsList(list);
+  };
+
+  const handleUpdateStaffNamesList = (list: string[]) => {
+    setStaffNamesList(list);
   };
 
   // Protocols & SOPs Document operations
@@ -334,6 +348,7 @@ export default function App() {
       schedule: INITIAL_SCHEDULE,
       weatherData: INITIAL_WEATHER,
       predefinedSupervisorsList: PREDEFINED_SUPERVISORS,
+      staffNamesList: INITIAL_STAFF_NAMES,
       updatedAt: new Date().toISOString(),
     };
 
@@ -361,6 +376,7 @@ export default function App() {
           setSchedule(INITIAL_SCHEDULE);
           setWeatherData(INITIAL_WEATHER);
           setPredefinedSupervisorsList(PREDEFINED_SUPERVISORS);
+          setStaffNamesList(INITIAL_STAFF_NAMES);
         }
       })
       .catch((err) => {
@@ -377,6 +393,7 @@ export default function App() {
         setSchedule(INITIAL_SCHEDULE);
         setWeatherData(INITIAL_WEATHER);
         setPredefinedSupervisorsList(PREDEFINED_SUPERVISORS);
+        setStaffNamesList(INITIAL_STAFF_NAMES);
       });
     localStorage.clear();
   };
@@ -415,9 +432,6 @@ export default function App() {
             <h1 className="text-sm font-black tracking-wider text-white uppercase leading-none font-sans">
               SFGA EMS <span className="font-normal opacity-75">OPERATIONS</span>
             </h1>
-            <span className="text-[10px] text-red-200 font-mono tracking-widest mt-0.5 block">
-              JACKSON DIVISION
-            </span>
           </div>
         </div>
 
@@ -580,6 +594,7 @@ export default function App() {
                   onUpdateRosterItem={handleUpdateRosterItem}
                   weatherData={weatherData}
                   onNavigateToTab={(tabId) => setActiveTab(tabId)}
+                  staffNamesList={staffNamesList}
                 />
               )}
 
@@ -666,6 +681,8 @@ export default function App() {
                   signals={signals}
                   predefinedSupervisorsList={predefinedSupervisorsList}
                   onUpdatePredefinedSupervisorsList={handleUpdatePredefinedSupervisorsList}
+                  staffNamesList={staffNamesList}
+                  onUpdateStaffNamesList={handleUpdateStaffNamesList}
                   onResetToDefaults={handleResetToDefaults}
                 />
               )}

@@ -1,6 +1,6 @@
 import React, { useState } from "react";
-import { ShieldCheck, Megaphone, Clock, RefreshCw, Users, BookOpen, Phone, Hash, Save, AlertTriangle } from "lucide-react";
-import { ParkHours, SupervisorChoice, PREDEFINED_SUPERVISORS, DocumentItem, RosterItem, ContactItem, PhoneExtension, TenCodeItem, SignalItem, WeeklySchedule } from "../types";
+import { ShieldCheck, Megaphone, Clock, RefreshCw, Users, BookOpen, Phone, Hash, Save, AlertTriangle, UserCheck, Plus, Trash2, ArrowUpDown, Check, ListFilter } from "lucide-react";
+import { ParkHours, SupervisorChoice, PREDEFINED_SUPERVISORS, DocumentItem, RosterItem, ContactItem, PhoneExtension, TenCodeItem, SignalItem, WeeklySchedule, INITIAL_STAFF_NAMES } from "../types";
 
 interface SupervisorAdminProps {
   parkHours: ParkHours;
@@ -21,6 +21,10 @@ interface SupervisorAdminProps {
   predefinedSupervisorsList: SupervisorChoice[];
   onUpdatePredefinedSupervisorsList: (list: SupervisorChoice[]) => void;
 
+  // Callsign Staff Pool (Dropdown list for dashboard callsigns)
+  staffNamesList: string[];
+  onUpdateStaffNamesList: (names: string[]) => void;
+
   // Emergency reset
   onResetToDefaults: () => void;
 }
@@ -39,6 +43,8 @@ export default function SupervisorAdmin({
   signals,
   predefinedSupervisorsList,
   onUpdatePredefinedSupervisorsList,
+  staffNamesList,
+  onUpdateStaffNamesList,
   onResetToDefaults,
 }: SupervisorAdminProps) {
   const [editedThemeHours, setEditedThemeHours] = useState(parkHours.themePark);
@@ -50,6 +56,13 @@ export default function SupervisorAdmin({
 
   // Edit predefined supervisors state
   const [localSups, setLocalSups] = useState<SupervisorChoice[]>([...predefinedSupervisorsList]);
+
+  // Edit staff dropdown names pool
+  const [localStaff, setLocalStaff] = useState<string[]>([...staffNamesList]);
+  const [newStaffInput, setNewStaffInput] = useState("");
+  const [staffSavedToast, setStaffSavedToast] = useState(false);
+  const [supsSavedToast, setSupsSavedToast] = useState(false);
+  const [hoursSavedToast, setHoursSavedToast] = useState(false);
 
   // Keep state synced with Firestore real-time updates
   React.useEffect(() => {
@@ -65,6 +78,10 @@ export default function SupervisorAdmin({
     setLocalSups([...predefinedSupervisorsList]);
   }, [predefinedSupervisorsList]);
 
+  React.useEffect(() => {
+    setLocalStaff([...staffNamesList]);
+  }, [staffNamesList]);
+
   const handleUpdateSups = (idx: number, field: "name" | "phone", value: string) => {
     const updated = [...localSups];
     updated[idx] = { ...updated[idx], [field]: value };
@@ -73,7 +90,67 @@ export default function SupervisorAdmin({
 
   const handleSaveSups = () => {
     onUpdatePredefinedSupervisorsList(localSups);
-    alert("Preselected Supervisor list updated successfully!");
+    setSupsSavedToast(true);
+    setTimeout(() => setSupsSavedToast(false), 2500);
+  };
+
+  // Staff Pool Operations
+  const handleAddStaffName = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    const trimmed = newStaffInput.trim();
+    if (!trimmed) return;
+    if (localStaff.some(s => s.toLowerCase() === trimmed.toLowerCase())) {
+      alert(`"${trimmed}" already exists in the dropdown staff pool.`);
+      return;
+    }
+    const updated = [...localStaff, trimmed];
+    setLocalStaff(updated);
+    setNewStaffInput("");
+    onUpdateStaffNamesList(updated);
+    setStaffSavedToast(true);
+    setTimeout(() => setStaffSavedToast(false), 2500);
+  };
+
+  const handleUpdateStaffItem = (idx: number, newName: string) => {
+    const updated = [...localStaff];
+    updated[idx] = newName;
+    setLocalStaff(updated);
+  };
+
+  const handleDeleteStaffItem = (idx: number) => {
+    const removedName = localStaff[idx];
+    const updated = localStaff.filter((_, i) => i !== idx);
+    setLocalStaff(updated);
+    onUpdateStaffNamesList(updated);
+    setStaffSavedToast(true);
+    setTimeout(() => setStaffSavedToast(false), 2500);
+  };
+
+  const handleSortStaffAlphabetical = () => {
+    const sorted = [...localStaff].sort((a, b) => a.localeCompare(b));
+    setLocalStaff(sorted);
+    onUpdateStaffNamesList(sorted);
+    setStaffSavedToast(true);
+    setTimeout(() => setStaffSavedToast(false), 2500);
+  };
+
+  const handleRestoreDefaultStaff = () => {
+    if (confirm("Restore the default list of EMS staff names? Custom added names will be merged.")) {
+      const merged = Array.from(new Set<string>([...localStaff, ...INITIAL_STAFF_NAMES]));
+      setLocalStaff(merged);
+      onUpdateStaffNamesList(merged);
+      setStaffSavedToast(true);
+      setTimeout(() => setStaffSavedToast(false), 2500);
+    }
+  };
+
+  const handleSaveStaffList = () => {
+    const filtered = localStaff.map(s => s.trim()).filter(Boolean);
+    const unique = Array.from(new Set<string>(filtered));
+    setLocalStaff(unique);
+    onUpdateStaffNamesList(unique);
+    setStaffSavedToast(true);
+    setTimeout(() => setStaffSavedToast(false), 2500);
   };
 
   const handleSaveHoursAndAnnounce = (e: React.FormEvent) => {
@@ -83,7 +160,8 @@ export default function SupervisorAdmin({
       waterPark: editedWaterHours,
     });
     onUpdateAnnouncement(editedAnnounce);
-    alert("Operational parameters updated successfully!");
+    setHoursSavedToast(true);
+    setTimeout(() => setHoursSavedToast(false), 2500);
   };
 
   const handleResetSystem = () => {
@@ -98,7 +176,7 @@ export default function SupervisorAdmin({
       .then(async (res) => {
         const data = await res.json();
         if (res.ok && data.success) {
-          if (confirm("🚨 WARNING: This will reset all Medical Protocols, SOPs, Roster, Contacts, Extensions, 10-Codes, and Schedules back to their factory defaults. Any customized edits will be overwritten. Continue?")) {
+          if (confirm("🚨 WARNING: This will reset all Medical Protocols, SOPs, Roster, Callsign Staff Pools, Contacts, Extensions, 10-Codes, and Schedules back to their factory defaults. Any customized edits will be overwritten. Continue?")) {
             onResetToDefaults();
             setHasReset(true);
             setResetPassword("");
@@ -108,6 +186,7 @@ export default function SupervisorAdmin({
             setEditedWaterHours(parkHours.waterPark);
             setEditedAnnounce(announcement);
             setLocalSups([...predefinedSupervisorsList]);
+            setLocalStaff([...INITIAL_STAFF_NAMES]);
             setTimeout(() => setHasReset(false), 2000);
           }
         } else {
@@ -130,7 +209,7 @@ export default function SupervisorAdmin({
           Supervisor Panel
         </h2>
         <p className="text-slate-550 text-sm mt-1">
-          Full command control over announcements, operating hours, schedule pools, and system datasets.
+          Full command control over announcements, operating hours, callsign roster staff pool, schedule pools, and system datasets.
         </p>
       </div>
 
@@ -139,8 +218,8 @@ export default function SupervisorAdmin({
         
         <div className="bg-white border border-slate-200 p-4 rounded text-center shadow-sm border-t-2 border-t-blue-900">
           <Users className="w-5 h-5 text-red-650 mx-auto mb-1.5" />
-          <span className="text-[10px] text-slate-500 font-mono uppercase block font-semibold">Active Roster</span>
-          <span className="text-xl font-bold text-slate-900 font-mono">{roster.length}</span>
+          <span className="text-[10px] text-slate-500 font-mono uppercase block font-semibold">Active Roster / Pool</span>
+          <span className="text-xl font-bold text-slate-900 font-mono">{roster.length} <span className="text-xs font-normal text-slate-500 font-sans">({localStaff.length} in Pool)</span></span>
         </div>
 
         <div className="bg-white border border-slate-200 p-4 rounded text-center shadow-sm border-t-2 border-t-blue-900">
@@ -163,72 +242,204 @@ export default function SupervisorAdmin({
 
       </div>
 
-      {/* Form Controls */}
+      {/* Main Administrative Sections */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         
-        {/* Left Form Column */}
-        <form onSubmit={handleSaveHoursAndAnnounce} className="lg:col-span-7 bg-white border border-slate-200 rounded p-6 space-y-5 shadow-sm border-t-4 border-t-blue-900">
-          <h3 className="text-base font-bold text-slate-900 border-b border-slate-100 pb-2.5 flex items-center gap-1.5">
-            <Megaphone className="w-5 h-5 text-red-650" />
-            Quick Operational Settings
-          </h3>
+        {/* Left Column: Shift Settings & Callsign Staff Dropdown Pool */}
+        <div className="lg:col-span-7 space-y-6">
 
-          <div>
-            <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider font-mono mb-1.5">
-              Active Shift Announcement Banner
-            </label>
-            <textarea
-              value={editedAnnounce}
-              onChange={(e) => setEditedAnnounce(e.target.value)}
-              rows={4}
-              className="w-full bg-slate-50 border border-slate-200 rounded p-3 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-blue-900 leading-relaxed font-sans shadow-inner"
-            />
-          </div>
+          {/* Callsign Staff Pool / Dropdown Names Management (NEW & SYNCED TO FIRESTORE) */}
+          <div className="bg-white border border-slate-200 rounded p-6 shadow-sm border-t-4 border-t-emerald-600">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-3 mb-4">
+              <div>
+                <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                  <UserCheck className="w-5 h-5 text-emerald-600" />
+                  Callsign Staff Pool (Dashboard Dropdown Names)
+                </h3>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Names created here appear in the dropdown picker for all callsigns on the Dashboard roster.
+                </p>
+              </div>
+              <span className="bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs font-mono font-bold px-2.5 py-1 rounded shrink-0 self-start sm:self-auto">
+                {localStaff.length} Names
+              </span>
+            </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider font-mono mb-1.5">
-                Theme Park Hours of Operation
-              </label>
+            {/* Add New Name Form */}
+            <form onSubmit={handleAddStaffName} className="flex gap-2 mb-4">
               <input
                 type="text"
-                value={editedThemeHours}
-                onChange={(e) => setEditedThemeHours(e.target.value)}
-                className="w-full bg-slate-50 border border-slate-200 rounded p-2 text-xs text-slate-800 focus:outline-none focus:border-blue-900 font-medium"
+                value={newStaffInput}
+                onChange={(e) => setNewStaffInput(e.target.value)}
+                placeholder="Enter EMT or Staff Member Name (e.g. John Doe)..."
+                className="flex-1 bg-slate-50 border border-slate-300 rounded px-3 py-2 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-emerald-600 font-medium"
               />
+              <button
+                type="submit"
+                className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded text-xs cursor-pointer font-bold flex items-center gap-1 shrink-0 transition-colors shadow-sm"
+              >
+                <Plus className="w-4 h-4" /> Add Name
+              </button>
+            </form>
+
+            {/* Quick Actions Toolbar */}
+            <div className="flex flex-wrap items-center justify-between gap-2 bg-slate-50 p-2.5 rounded border border-slate-200 text-xs mb-3 font-mono">
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={handleSortStaffAlphabetical}
+                  className="px-2 py-1 bg-white hover:bg-slate-100 text-slate-700 rounded border border-slate-200 flex items-center gap-1 cursor-pointer font-medium"
+                  title="Sort names alphabetically"
+                >
+                  <ArrowUpDown className="w-3 h-3 text-slate-500" /> Sort A-Z
+                </button>
+                <button
+                  type="button"
+                  onClick={handleRestoreDefaultStaff}
+                  className="px-2 py-1 bg-white hover:bg-slate-100 text-slate-700 rounded border border-slate-200 flex items-center gap-1 cursor-pointer font-medium"
+                  title="Merge default roster names"
+                >
+                  <RefreshCw className="w-3 h-3 text-slate-500" /> Defaults
+                </button>
+              </div>
+              <span className="text-[11px] text-slate-500 font-sans">
+                💡 Changes sync automatically to Firebase Firestore.
+              </span>
             </div>
+
+            {/* List of Staff Names in Pool */}
+            <div className="space-y-2 max-h-[300px] overflow-y-auto pr-1">
+              {localStaff.length === 0 ? (
+                <div className="p-4 text-center text-xs text-slate-400 italic bg-slate-50 rounded border border-dashed border-slate-200">
+                  No names currently in the dropdown pool. Add staff names above to populate callsign dropdowns.
+                </div>
+              ) : (
+                localStaff.map((staffName, idx) => (
+                  <div
+                    key={idx}
+                    className="flex items-center justify-between gap-2 bg-slate-50 hover:bg-slate-100/80 p-2 rounded border border-slate-200 transition-colors"
+                  >
+                    <div className="flex items-center gap-2 flex-1 min-w-0">
+                      <span className="text-[10px] font-mono text-slate-400 w-5 text-right shrink-0">
+                        {idx + 1}.
+                      </span>
+                      <input
+                        type="text"
+                        value={staffName}
+                        onChange={(e) => handleUpdateStaffItem(idx, e.target.value)}
+                        onBlur={handleSaveStaffList}
+                        className="bg-white border border-slate-200 hover:border-slate-300 focus:border-emerald-600 rounded px-2 py-1 text-xs text-slate-800 font-medium flex-1 focus:outline-none"
+                      />
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteStaffItem(idx)}
+                      className="text-slate-400 hover:text-red-600 p-1.5 rounded hover:bg-red-50 transition-colors cursor-pointer shrink-0"
+                      title="Remove name from dropdown pool"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                ))
+              )}
+            </div>
+
+            {/* Save & Feedback Bar */}
+            <div className="flex items-center justify-between pt-3 mt-3 border-t border-slate-100">
+              <span className="text-[11px] text-slate-500 font-sans">
+                {staffSavedToast ? (
+                  <span className="text-emerald-700 font-bold flex items-center gap-1 animate-fadeIn">
+                    <Check className="w-4 h-4 text-emerald-600" /> Synced with Firebase Cloud!
+                  </span>
+                ) : (
+                  <span>Click in any field to edit. Remove with trash button.</span>
+                )}
+              </span>
+              <button
+                type="button"
+                onClick={handleSaveStaffList}
+                className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded text-xs cursor-pointer font-bold flex items-center gap-1 shadow-sm transition-colors"
+              >
+                <Save className="w-4 h-4" /> Save Staff Pool
+              </button>
+            </div>
+          </div>
+          
+          {/* Operational Settings Form */}
+          <form onSubmit={handleSaveHoursAndAnnounce} className="bg-white border border-slate-200 rounded p-6 space-y-5 shadow-sm border-t-4 border-t-blue-900">
+            <h3 className="text-base font-bold text-slate-900 border-b border-slate-100 pb-2.5 flex items-center gap-1.5">
+              <Megaphone className="w-5 h-5 text-red-650" />
+              Quick Operational Settings
+            </h3>
+
             <div>
               <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider font-mono mb-1.5">
-                Water Park Hours of Operation
+                Active Shift Announcement Banner
               </label>
-              <input
-                type="text"
-                value={editedWaterHours}
-                onChange={(e) => setEditedWaterHours(e.target.value)}
-                className="w-full bg-slate-50 border border-slate-200 rounded p-2 text-xs text-slate-800 focus:outline-none focus:border-blue-900 font-medium"
+              <textarea
+                value={editedAnnounce}
+                onChange={(e) => setEditedAnnounce(e.target.value)}
+                rows={4}
+                className="w-full bg-slate-50 border border-slate-200 rounded p-3 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-blue-900 leading-relaxed font-sans shadow-inner"
               />
             </div>
-          </div>
 
-          <div className="flex justify-end pt-3 border-t border-slate-100">
-            <button
-              type="submit"
-              className="px-4 py-2 bg-blue-900 hover:bg-blue-850 text-white rounded text-xs cursor-pointer font-bold flex items-center gap-1 shadow-sm"
-            >
-              <Save className="w-4 h-4" /> Save Shift Settings
-            </button>
-          </div>
-        </form>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider font-mono mb-1.5">
+                  Theme Park Hours of Operation
+                </label>
+                <input
+                  type="text"
+                  value={editedThemeHours}
+                  onChange={(e) => setEditedThemeHours(e.target.value)}
+                  className="w-full bg-slate-50 border border-slate-200 rounded p-2 text-xs text-slate-800 focus:outline-none focus:border-blue-900 font-medium"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider font-mono mb-1.5">
+                  Water Park Hours of Operation
+                </label>
+                <input
+                  type="text"
+                  value={editedWaterHours}
+                  onChange={(e) => setEditedWaterHours(e.target.value)}
+                  className="w-full bg-slate-50 border border-slate-200 rounded p-2 text-xs text-slate-800 focus:outline-none focus:border-blue-900 font-medium"
+                />
+              </div>
+            </div>
 
-        {/* Right Form Column - Preselected supervisor entries */}
+            <div className="flex items-center justify-between pt-3 border-t border-slate-100">
+              <span className="text-[11px] text-slate-500 font-sans">
+                {hoursSavedToast && (
+                  <span className="text-blue-700 font-bold flex items-center gap-1 animate-fadeIn">
+                    <Check className="w-4 h-4 text-blue-600" /> Operational parameters saved!
+                  </span>
+                )}
+              </span>
+              <button
+                type="submit"
+                className="px-4 py-2 bg-blue-900 hover:bg-blue-850 text-white rounded text-xs cursor-pointer font-bold flex items-center gap-1 shadow-sm"
+              >
+                <Save className="w-4 h-4" /> Save Shift Settings
+              </button>
+            </div>
+          </form>
+
+        </div>
+
+        {/* Right Form Column - Preselected supervisor entries & Factory Reset */}
         <div className="lg:col-span-5 space-y-6">
           
           {/* Preselected Supervisor Pool Edit */}
           <div className="bg-white border border-slate-200 rounded p-6 space-y-4 shadow-sm border-t-4 border-t-blue-900">
-            <h3 className="text-base font-bold text-slate-900 border-b border-slate-100 pb-2 flex items-center gap-1.5">
-              <Users className="w-5 h-5 text-blue-900" />
-              Preselected Supervisor Pool
-            </h3>
+            <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+              <h3 className="text-base font-bold text-slate-900 flex items-center gap-1.5">
+                <Users className="w-5 h-5 text-blue-900" />
+                Preselected Supervisor Pool
+              </h3>
+              <span className="text-xs font-mono text-slate-400">790/170 Schedule</span>
+            </div>
             <p className="text-xs text-slate-550 leading-normal">
               Edit names and phone numbers in the select pool for 790/170 schedule assignments.
             </p>
@@ -242,7 +453,7 @@ export default function SupervisorAdmin({
                       type="text"
                       value={sup.name}
                       onChange={(e) => handleUpdateSups(idx, "name", e.target.value)}
-                      className="w-full bg-white border border-slate-200 hover:border-slate-300 focus:border-blue-900 rounded p-1 text-xs text-slate-800 focus:outline-none"
+                      className="w-full bg-white border border-slate-200 hover:border-slate-300 focus:border-blue-900 rounded p-1 text-xs text-slate-800 focus:outline-none font-medium"
                     />
                   </div>
                   <div className="space-y-1">
@@ -258,12 +469,21 @@ export default function SupervisorAdmin({
               ))}
             </div>
 
-            <button
-              onClick={handleSaveSups}
-              className="w-full bg-white hover:bg-slate-50 text-slate-700 text-xs py-2 rounded border border-slate-200 hover:border-slate-300 cursor-pointer font-bold flex items-center justify-center gap-1"
-            >
-              <Save className="w-3.5 h-3.5" /> Save Preselected Pool
-            </button>
+            <div className="flex items-center justify-between pt-2">
+              <span className="text-[11px] text-slate-500">
+                {supsSavedToast && (
+                  <span className="text-emerald-700 font-bold flex items-center gap-1 animate-fadeIn">
+                    <Check className="w-3.5 h-3.5 text-emerald-600" /> Saved!
+                  </span>
+                )}
+              </span>
+              <button
+                onClick={handleSaveSups}
+                className="bg-white hover:bg-slate-50 text-slate-700 text-xs px-3 py-2 rounded border border-slate-200 hover:border-slate-300 cursor-pointer font-bold flex items-center justify-center gap-1"
+              >
+                <Save className="w-3.5 h-3.5" /> Save Preselected Pool
+              </button>
+            </div>
           </div>
 
           {/* Factory Reset Section */}

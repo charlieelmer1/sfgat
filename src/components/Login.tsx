@@ -63,7 +63,6 @@ export default function Login({ onLoginSuccess }: LoginProps) {
         </div>
         <div>
           <h1 className="text-sm font-black tracking-wider text-slate-900">SFGA EMS OPERATIONS</h1>
-          <p className="text-[10px] text-slate-500 font-mono">JACKSON DIVISION</p>
         </div>
       </header>
 

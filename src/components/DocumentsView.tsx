@@ -21,7 +21,7 @@ export default function DocumentsView({
 }: DocumentsViewProps) {
   const isSupervisor = userRole === "Supervisor";
   const [searchTerm, setSearchTerm] = useState("");
-  const [activeTypeFilter, setActiveTypeFilter] = useState<"all" | "procedures" | "direction">("all");
+  const [activeTypeFilter, setActiveTypeFilter] = useState<"procedures" | "direction">("procedures");
 
   // Filter documents based on mode and filters
   const filteredDocs = documents.filter((doc) => {
@@ -40,7 +40,7 @@ export default function DocumentsView({
       doc.content.toLowerCase().includes(searchTerm.toLowerCase());
 
     // Sub-type filter for protocols
-    if (mode === "protocols" && activeTypeFilter !== "all") {
+    if (mode === "protocols") {
       return matchesSearch && doc.type === activeTypeFilter;
     }
 
@@ -52,7 +52,7 @@ export default function DocumentsView({
     filteredDocs.length > 0 ? filteredDocs[0].id : null
   );
 
-  const selectedDoc = documents.find((doc) => doc.id === selectedDocId) || filteredDocs[0];
+  const selectedDoc = filteredDocs.find((doc) => doc.id === selectedDocId) || filteredDocs[0];
 
   // Editor states
   const [isEditing, setIsEditing] = useState(false);
@@ -248,15 +248,11 @@ export default function DocumentsView({
           {mode === "protocols" && (
             <div className="flex bg-slate-100 p-1 rounded border border-slate-200 text-xs font-semibold">
               <button
-                onClick={() => setActiveTypeFilter("all")}
-                className={`flex-1 py-1.5 rounded text-center cursor-pointer transition-all ${
-                  activeTypeFilter === "all" ? "bg-white text-slate-900 shadow-sm font-bold" : "text-slate-500 hover:text-slate-800"
-                }`}
-              >
-                All
-              </button>
-              <button
-                onClick={() => setActiveTypeFilter("procedures")}
+                onClick={() => {
+                  setActiveTypeFilter("procedures");
+                  const firstProc = documents.find(d => d.type === "procedures");
+                  if (firstProc) setSelectedDocId(firstProc.id);
+                }}
                 className={`flex-1 py-1.5 rounded text-center cursor-pointer transition-all ${
                   activeTypeFilter === "procedures" ? "bg-white text-slate-900 shadow-sm font-bold" : "text-slate-500 hover:text-slate-800"
                 }`}
@@ -264,7 +260,11 @@ export default function DocumentsView({
                 SF Procedures
               </button>
               <button
-                onClick={() => setActiveTypeFilter("direction")}
+                onClick={() => {
+                  setActiveTypeFilter("direction");
+                  const firstDir = documents.find(d => d.type === "direction");
+                  if (firstDir) setSelectedDocId(firstDir.id);
+                }}
                 className={`flex-1 py-1.5 rounded text-center cursor-pointer transition-all ${
                   activeTypeFilter === "direction" ? "bg-white text-slate-900 shadow-sm font-bold" : "text-slate-500 hover:text-slate-800"
                 }`}

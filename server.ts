@@ -17,6 +17,7 @@ import {
   INITIAL_SCHEDULE,
   INITIAL_WEATHER,
   PREDEFINED_SUPERVISORS,
+  INITIAL_STAFF_NAMES,
 } from "./src/types";
 
 const DB_FILE = path.join(process.cwd(), "db.json");
@@ -43,6 +44,7 @@ function loadDb() {
     schedule: INITIAL_SCHEDULE,
     weatherData: INITIAL_WEATHER,
     predefinedSupervisorsList: PREDEFINED_SUPERVISORS,
+    staffNamesList: INITIAL_STAFF_NAMES,
   };
 
   saveDb(defaultDb);
@@ -123,6 +125,7 @@ async function startServer() {
       schedule: INITIAL_SCHEDULE,
       weatherData: INITIAL_WEATHER,
       predefinedSupervisorsList: PREDEFINED_SUPERVISORS,
+      staffNamesList: INITIAL_STAFF_NAMES,
     };
     saveDb(defaultDb);
     res.json({ success: true, state: defaultDb });

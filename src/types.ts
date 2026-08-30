@@ -92,6 +92,30 @@ export const PREDEFINED_SUPERVISORS: SupervisorChoice[] = [
   { id: "5", name: "Madison Prendergast", phone: "908-208-8933" },
 ];
 
+// Predefined Staff / Personnel pool for callsigns dropdown selection
+export const INITIAL_STAFF_NAMES: string[] = [
+  "Shane Havens",
+  "Skylar Kohn",
+  "Lyli D'Armetta",
+  "Dylan Grebler",
+  "Madison Prendergast",
+  "Ryan Miller",
+  "Amanda Smith",
+  "David Jones",
+  "Sarah Conner",
+  "Michael Chang",
+  "Jessica Williams",
+  "James Thompson",
+  "Emily Davis",
+  "Kyle Anderson",
+  "Brianna Scott",
+  "Thomas Kelly",
+  "Medic 2 Crew (ALS Rescue)",
+  "Medic 3 Crew (Station 1)",
+  "Main First Aid Dispatcher",
+  "Hurricane Harbor Crew",
+];
+
 export const INITIAL_PARK_HOURS: ParkHours = {
   themePark: "10:00 AM - 10:00 PM",
   waterPark: "11:00 AM - 6:30 PM",
