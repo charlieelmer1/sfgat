@@ -450,7 +450,7 @@ export default function App() {
           <button
             onClick={handleLogout}
             className="hidden sm:flex items-center gap-1 bg-red-700 hover:bg-red-800 text-white border border-red-500 px-3 py-1.5 rounded-lg text-xs font-bold cursor-pointer transition-all shadow-sm"
-            title="Disconnect Terminal Session"
+            title="Disconnect Session"
           >
             <LogOut className="w-3.5 h-3.5" /> Disconnect
           </button>
@@ -495,7 +495,7 @@ export default function App() {
 
           <div className="pt-6 border-t border-slate-700 mt-6 px-3">
             <span className="text-[9px] font-mono text-slate-500 uppercase leading-relaxed block">
-              Operator Terminal:
+              Active Station:
             </span>
             <div className="text-[10px] font-mono text-slate-400 mt-1 uppercase font-bold truncate">
               {userRole === "Supervisor" ? "COMMAND-790" : "PATROL-EMT"}
@@ -551,7 +551,7 @@ export default function App() {
                   onClick={handleLogout}
                   className="flex items-center gap-1 text-[10px] text-white bg-red-700 px-2.5 py-1 rounded font-bold"
                 >
-                  <LogOut className="w-3 h-3" /> Disconnect Terminal
+                  <LogOut className="w-3 h-3" /> Disconnect
                 </button>
               </div>
             </motion.div>

@@ -95,7 +95,7 @@ export default function DashboardView({
               Six Flags Great Adventure EMS
             </h2>
             <p className="text-slate-500 text-sm mt-1 font-sans">
-              Active Session: <strong className="text-slate-800">{userRole} Terminal</strong> | Jackson, NJ
+              Active Session: <strong className="text-slate-800">{userRole} Access</strong> | Jackson, NJ
             </p>
           </div>
           <div className="bg-slate-50 border border-slate-200 rounded px-4 py-3 text-right shadow-inner">
