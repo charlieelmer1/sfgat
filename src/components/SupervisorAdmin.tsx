@@ -60,6 +60,7 @@ export default function SupervisorAdmin({
   // Edit staff dropdown names pool
   const [localStaff, setLocalStaff] = useState<string[]>([...staffNamesList]);
   const [newStaffInput, setNewStaffInput] = useState("");
+  const [bulkInputMode, setBulkInputMode] = useState(false);
   const [staffSavedToast, setStaffSavedToast] = useState(false);
   const [supsSavedToast, setSupsSavedToast] = useState(false);
   const [hoursSavedToast, setHoursSavedToast] = useState(false);
@@ -97,13 +98,34 @@ export default function SupervisorAdmin({
   // Staff Pool Operations
   const handleAddStaffName = (e?: React.FormEvent) => {
     if (e) e.preventDefault();
-    const trimmed = newStaffInput.trim();
-    if (!trimmed) return;
-    if (localStaff.some(s => s.toLowerCase() === trimmed.toLowerCase())) {
-      alert(`"${trimmed}" already exists in the dropdown staff pool.`);
+    const raw = newStaffInput.trim();
+    if (!raw) return;
+
+    // Split by newlines or commas in case user pastes multiple names
+    const incomingNames = raw
+      .split(/[\n,]+/)
+      .map((s) => s.trim())
+      .filter((s) => s.length > 0);
+
+    if (incomingNames.length === 0) return;
+
+    // Add unique names not already in pool (case-insensitive check)
+    const existingLower = new Set(localStaff.map((s) => s.toLowerCase()));
+    const toAdd: string[] = [];
+
+    for (const name of incomingNames) {
+      if (!existingLower.has(name.toLowerCase())) {
+        existingLower.add(name.toLowerCase());
+        toAdd.push(name);
+      }
+    }
+
+    if (toAdd.length === 0) {
+      alert(`The entered name(s) already exist in the dropdown staff pool.`);
       return;
     }
-    const updated = [...localStaff, trimmed];
+
+    const updated = [...localStaff, ...toAdd];
     setLocalStaff(updated);
     setNewStaffInput("");
     onUpdateStaffNamesList(updated);
@@ -265,22 +287,67 @@ export default function SupervisorAdmin({
               </span>
             </div>
 
-            {/* Add New Name Form */}
-            <form onSubmit={handleAddStaffName} className="flex gap-2 mb-4">
-              <input
-                type="text"
-                value={newStaffInput}
-                onChange={(e) => setNewStaffInput(e.target.value)}
-                placeholder="Enter EMT or Staff Member Name (e.g. John Doe)..."
-                className="flex-1 bg-slate-50 border border-slate-300 rounded px-3 py-2 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-emerald-600 font-medium"
-              />
-              <button
-                type="submit"
-                className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded text-xs cursor-pointer font-bold flex items-center gap-1 shrink-0 transition-colors shadow-sm"
-              >
-                <Plus className="w-4 h-4" /> Add Name
-              </button>
-            </form>
+            {/* Add New Name Form (Enlarged and optimized for desktop & mobile) */}
+            <div className="bg-slate-50 border border-slate-200 rounded-lg p-3.5 mb-4 space-y-2.5">
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-bold text-slate-700 uppercase tracking-wide flex items-center gap-1.5">
+                  <UserCheck className="w-4 h-4 text-emerald-600" />
+                  Add Staff to Dropdown Pool:
+                </label>
+                <button
+                  type="button"
+                  onClick={() => setBulkInputMode(!bulkInputMode)}
+                  className="text-[11px] font-mono font-bold text-emerald-700 hover:text-emerald-800 bg-white hover:bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded cursor-pointer transition-colors"
+                >
+                  {bulkInputMode ? "Single Name Mode" : "Bulk / Multi-Name Paste"}
+                </button>
+              </div>
+
+              {bulkInputMode ? (
+                <form onSubmit={handleAddStaffName} className="space-y-2">
+                  <textarea
+                    rows={4}
+                    value={newStaffInput}
+                    onChange={(e) => setNewStaffInput(e.target.value)}
+                    placeholder="Paste multiple staff names (separated by new lines or commas)...&#10;e.g.&#10;Jane Smith&#10;Robert Martinez&#10;Alex Morgan"
+                    className="w-full bg-white border-2 border-emerald-300 focus:border-emerald-600 rounded-lg p-3 text-sm text-slate-900 placeholder-slate-400 focus:outline-none font-medium shadow-sm transition-all resize-y"
+                    autoFocus
+                  />
+                  <div className="flex justify-between items-center">
+                    <span className="text-[11px] text-slate-500 font-mono">
+                      Separate each EMT name with a new line or comma
+                    </span>
+                    <button
+                      type="submit"
+                      disabled={!newStaffInput.trim()}
+                      className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-40 disabled:cursor-not-allowed text-white rounded-lg text-xs cursor-pointer font-bold flex items-center gap-1.5 transition-colors shadow"
+                    >
+                      <Plus className="w-4 h-4" /> Add All Names to Pool
+                    </button>
+                  </div>
+                </form>
+              ) : (
+                <form onSubmit={handleAddStaffName} className="flex flex-col sm:flex-row gap-2">
+                  <div className="relative flex-1">
+                    <input
+                      type="text"
+                      value={newStaffInput}
+                      onChange={(e) => setNewStaffInput(e.target.value)}
+                      placeholder="Type EMT or Staff Member Name (e.g. John Doe)..."
+                      className="w-full bg-white border-2 border-slate-300 focus:border-emerald-600 rounded-lg px-4 py-3 text-sm md:text-base text-slate-900 placeholder-slate-400 focus:outline-none font-semibold shadow-sm transition-all"
+                    />
+                  </div>
+                  <button
+                    type="submit"
+                    disabled={!newStaffInput.trim()}
+                    className="px-5 py-3 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-40 disabled:cursor-not-allowed text-white rounded-lg text-sm cursor-pointer font-bold flex items-center justify-center gap-2 shrink-0 transition-colors shadow-md active:scale-[0.99]"
+                  >
+                    <Plus className="w-5 h-5" />
+                    <span>Add Name to Dropdown</span>
+                  </button>
+                </form>
+              )}
+            </div>
 
             {/* Quick Actions Toolbar */}
             <div className="flex flex-wrap items-center justify-between gap-2 bg-slate-50 p-2.5 rounded border border-slate-200 text-xs mb-3 font-mono">
@@ -328,7 +395,7 @@ export default function SupervisorAdmin({
                         value={staffName}
                         onChange={(e) => handleUpdateStaffItem(idx, e.target.value)}
                         onBlur={handleSaveStaffList}
-                        className="bg-white border border-slate-200 hover:border-slate-300 focus:border-emerald-600 rounded px-2 py-1 text-xs text-slate-800 font-medium flex-1 focus:outline-none"
+                        className="bg-white border border-slate-200 hover:border-slate-300 focus:border-emerald-600 rounded px-2.5 py-1.5 text-xs sm:text-sm text-slate-800 font-medium flex-1 focus:outline-none transition-colors"
                       />
                     </div>
                     <button

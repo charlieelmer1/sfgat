@@ -108,27 +108,27 @@ export default function DashboardView({
           {isEditing ? (
             <div className="flex items-center gap-1.5 flex-1 min-w-0">
               {customInputMode ? (
-                <div className="flex items-center gap-1 flex-1 min-w-0">
+                <div className="flex items-center gap-1.5 flex-1 min-w-0">
                   <input
                     type="text"
                     value={editedRosterName}
                     onChange={(e) => setEditedRosterName(e.target.value)}
                     onKeyDown={(e) => e.key === "Enter" && handleSaveRoster(item.id, editedRosterName)}
                     placeholder="Enter custom name..."
-                    className="bg-white border border-blue-600 rounded px-2 py-1 text-xs text-slate-800 w-full focus:outline-none font-medium shadow-sm"
+                    className="bg-white border-2 border-blue-600 rounded px-2.5 py-1.5 text-xs sm:text-sm text-slate-900 w-full focus:outline-none font-semibold shadow-sm"
                     autoFocus
                   />
                   <button
                     type="button"
                     onClick={() => setCustomInputMode(false)}
-                    className="text-[10px] text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 px-1.5 py-1 rounded font-mono shrink-0 cursor-pointer font-bold"
+                    className="text-xs text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 px-2 py-1.5 rounded font-mono shrink-0 cursor-pointer font-bold transition-colors"
                     title="Switch to dropdown list"
                   >
-                    <List className="w-3 h-3 inline" /> List
+                    <List className="w-3.5 h-3.5 inline" /> List
                   </button>
                 </div>
               ) : (
-                <div className="flex items-center gap-1 flex-1 min-w-0">
+                <div className="flex items-center gap-1.5 flex-1 min-w-0">
                   <select
                     value={staffNamesList.includes(editedRosterName) ? editedRosterName : (editedRosterName ? "__custom__" : "")}
                     onChange={(e) => {
@@ -140,7 +140,7 @@ export default function DashboardView({
                         handleSaveRoster(item.id, val);
                       }
                     }}
-                    className="bg-white border border-blue-600 rounded px-2 py-1 text-xs text-slate-800 w-full focus:outline-none font-medium shadow-sm cursor-pointer"
+                    className="bg-white border-2 border-blue-600 rounded px-2.5 py-1.5 text-xs sm:text-sm text-slate-900 w-full focus:outline-none font-semibold shadow-sm cursor-pointer"
                     autoFocus
                   >
                     <option value="">-- Vacant / Open --</option>
@@ -158,10 +158,10 @@ export default function DashboardView({
                   <button
                     type="button"
                     onClick={() => setCustomInputMode(true)}
-                    className="text-[10px] text-slate-600 bg-slate-100 hover:bg-slate-200 border border-slate-300 px-1.5 py-1 rounded font-mono shrink-0 cursor-pointer font-bold"
+                    className="text-xs text-slate-600 bg-slate-100 hover:bg-slate-200 border border-slate-300 px-2 py-1.5 rounded font-mono shrink-0 cursor-pointer font-bold transition-colors"
                     title="Type custom name manually"
                   >
-                    <Type className="w-3 h-3 inline" />
+                    <Type className="w-3.5 h-3.5 inline" />
                   </button>
                 </div>
               )}
