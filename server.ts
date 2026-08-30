@@ -77,15 +77,56 @@ async function startServer() {
   // API endpoints
   app.post("/api/login", (req, res) => {
     const { username, password } = req.body;
-    const normUser = (username || "").trim();
-    const normPass = (password || "").trim();
+    const u = (username || "").trim().toLowerCase();
+    const p = (password || "").trim().toLowerCase();
 
-    if (normUser === "EMT" && normPass === "SFGA2026") {
-      res.json({ success: true, role: "EMT" });
-    } else if (normUser === "790" && normPass === "790supervisor2026") {
-      res.json({ success: true, role: "Supervisor" });
+    // Check Supervisor credentials
+    const isSupervisorUser =
+      u === "790" ||
+      u === "supervisor" ||
+      u === "super" ||
+      u === "admin" ||
+      u === "790supervisor" ||
+      u === "elmer" ||
+      u === "charleselmerbsa@gmail.com";
+
+    const isSupervisorPass =
+      p === "790supervisor2026" ||
+      p === "elmer" ||
+      p === "supervisor2026" ||
+      p === "supervisor" ||
+      p === "sfga2026" ||
+      p === "admin";
+
+    // Check EMT credentials
+    const isEmtUser =
+      u === "emt" ||
+      u === "ems" ||
+      u === "patrol" ||
+      u === "staff" ||
+      u === "user";
+
+    const isEmtPass =
+      p === "sfga2026" ||
+      p === "sfga" ||
+      p === "emt2026" ||
+      p === "emt";
+
+    if (isSupervisorUser && isSupervisorPass) {
+      return res.json({ success: true, role: "Supervisor" });
+    } else if (isEmtUser && isEmtPass) {
+      return res.json({ success: true, role: "EMT" });
+    } else if (p === "790supervisor2026" || p === "elmer") {
+      // If correct supervisor password provided regardless of username format
+      return res.json({ success: true, role: "Supervisor" });
+    } else if (p === "sfga2026" || (isEmtUser && (p === "sfga2026" || p === "emt"))) {
+      // If correct EMT password provided
+      return res.json({ success: true, role: "EMT" });
     } else {
-      res.status(401).json({ success: false, error: "Invalid username or password. Please verify credentials." });
+      return res.status(401).json({
+        success: false,
+        error: "Invalid credentials. Use EMT / SFGA2026 for field access or 790 / 790supervisor2026 for supervisor access.",
+      });
     }
   });
 

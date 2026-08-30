@@ -16,11 +16,8 @@ import {
   Plus,
   Search,
   UserPlus,
-  ShieldCheck,
-  CheckCircle2,
   Trash2,
   AlertCircle,
-  Sparkles,
 } from "lucide-react";
 import { RosterItem, ParkHours, WeatherData } from "../types";
 
@@ -65,12 +62,6 @@ export default function DashboardView({
   const [editingRosterId, setEditingRosterId] = useState<string | null>(null);
   const [editedRosterName, setEditedRosterName] = useState("");
   const [customInputMode, setCustomInputMode] = useState(false);
-
-  // Quick assignment bar states
-  const [quickCallsign, setQuickCallsign] = useState(roster[0]?.id || "790");
-  const [quickStaffName, setQuickStaffName] = useState("");
-  const [quickCustomMode, setQuickCustomMode] = useState(false);
-  const [quickSuccessMsg, setQuickSuccessMsg] = useState<string | null>(null);
 
   // Quick add new staff to dropdown pool modal/drawer
   const [showAddStaffModal, setShowAddStaffModal] = useState(false);
@@ -129,24 +120,6 @@ export default function DashboardView({
     if (editingRosterId === id) {
       setEditingRosterId(null);
     }
-  };
-
-  // Quick Assign submit handler
-  const handleQuickAssign = (e: React.FormEvent) => {
-    e.preventDefault();
-    const finalName = quickStaffName.trim();
-    if (!quickCallsign) return;
-
-    onUpdateRosterItem(quickCallsign, finalName);
-
-    // If it was a custom name and not yet in the staff pool, add it if handler provided
-    if (finalName && !staffNamesList.includes(finalName) && onUpdateStaffNamesList) {
-      onUpdateStaffNamesList([...staffNamesList, finalName]);
-    }
-
-    setQuickSuccessMsg(`Assigned ${finalName || "Vacant"} to Call Sign ${quickCallsign}`);
-    setTimeout(() => setQuickSuccessMsg(null), 3500);
-    setQuickStaffName("");
   };
 
   // Quick add staff names to pool handler
@@ -216,6 +189,7 @@ export default function DashboardView({
   const renderRosterItem = (item: RosterItem, badgeColorClass: string) => {
     const isEditing = editingRosterId === item.id;
     const isVacant = !item.name || item.name.trim() === "";
+    const isSupervisorUnit = item.id === "790" || item.id === "170";
 
     return (
       <div
@@ -237,13 +211,11 @@ export default function DashboardView({
               >
                 {item.id}
               </span>
-              <span className="text-[11px] font-mono text-slate-400 font-semibold uppercase">
-                {item.id === "790" || item.id === "170"
-                  ? "Command Unit"
-                  : item.id.startsWith("EMS")
-                  ? "Park Support"
-                  : "Field Patrol"}
-              </span>
+              {isSupervisorUnit && (
+                <span className="text-[11px] font-mono text-slate-400 font-semibold uppercase">
+                  Supervisor
+                </span>
+              )}
             </div>
 
             {isSupervisor && !isEditing && (
@@ -608,7 +580,7 @@ export default function DashboardView({
                 On-Duty EMS Communications Roster
               </h3>
               <p className="text-xs text-slate-500 font-medium">
-                Live park assignments across Command, Theme Park, Additional Units, and Water Park
+                Live park assignments across Supervisors, Theme Park, Additional Units, and Water Park
               </p>
             </div>
           </div>
@@ -649,139 +621,17 @@ export default function DashboardView({
           </div>
         </div>
 
-        {/* Supervisor Quick Assignment Command Center */}
-        {isSupervisor && (
-          <div className="bg-gradient-to-r from-blue-50/80 via-indigo-50/50 to-slate-50 border-2 border-blue-200/90 rounded-xl p-4 sm:p-5 shadow-xs space-y-3">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-              <div className="flex items-center gap-2">
-                <ShieldCheck className="w-5 h-5 text-blue-700 shrink-0" />
-                <h4 className="text-sm font-extrabold text-blue-950 font-sans">
-                  Supervisor Quick Assign & Name Tool
-                </h4>
-              </div>
-              <span className="text-[11px] font-mono text-blue-700 bg-white border border-blue-200 px-2.5 py-0.5 rounded-full font-semibold">
-                Dropdown Pool: {staffNamesList.length} staff available
-              </span>
-            </div>
-
-            {quickSuccessMsg && (
-              <div className="bg-emerald-100/80 border border-emerald-300 text-emerald-900 text-xs px-3.5 py-2 rounded-lg flex items-center gap-2 font-semibold">
-                <CheckCircle2 className="w-4 h-4 text-emerald-700 shrink-0" />
-                <span>{quickSuccessMsg}</span>
-              </div>
-            )}
-
-            {/* Quick Assign Form */}
-            <form onSubmit={handleQuickAssign} className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-end">
-              {/* Step 1: Select Call Sign */}
-              <div className="sm:col-span-4 space-y-1">
-                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider font-mono">
-                  1. Call Sign:
-                </label>
-                <select
-                  value={quickCallsign}
-                  onChange={(e) => setQuickCallsign(e.target.value)}
-                  className="w-full bg-white border-2 border-slate-300 focus:border-blue-600 rounded-lg px-3 py-2.5 text-sm font-bold text-slate-900 focus:outline-none shadow-xs cursor-pointer"
-                >
-                  <optgroup label="Command">
-                    <option value="790">790 (Main Supervisor)</option>
-                    <option value="170">170 (Water Park Supervisor)</option>
-                  </optgroup>
-                  <optgroup label="Theme Park EMT Patrols">
-                    <option value="791">791 (EMT Patrol)</option>
-                    <option value="792">792 (EMT Patrol)</option>
-                    <option value="793">793 (EMT Patrol)</option>
-                    <option value="794">794 (EMT Patrol)</option>
-                    <option value="795">795 (EMT Patrol)</option>
-                    <option value="796">796 (EMT Patrol)</option>
-                    <option value="797">797 (EMT Patrol)</option>
-                    <option value="798">798 (EMT Patrol)</option>
-                  </optgroup>
-                  <optgroup label="Additional Support EMTs">
-                    <option value="EMS2">EMS2 (Transport Unit)</option>
-                    <option value="EMS3">EMS3 (First Aid Station 1)</option>
-                    <option value="EMS4">EMS4 (First Aid Station 2)</option>
-                    <option value="EMS5">EMS5 (Rover)</option>
-                  </optgroup>
-                  <optgroup label="Water Park EMTs">
-                    <option value="171">171 (WP First Aid)</option>
-                    <option value="172">172 (WP Rover)</option>
-                    <option value="173">173 (WP Rover)</option>
-                  </optgroup>
-                </select>
-              </div>
-
-              {/* Step 2: Select or Type Staff Name */}
-              <div className="sm:col-span-5 space-y-1">
-                <div className="flex items-center justify-between">
-                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider font-mono">
-                    2. Staff Member:
-                  </label>
-                  <button
-                    type="button"
-                    onClick={() => setQuickCustomMode(!quickCustomMode)}
-                    className="text-[11px] font-mono text-blue-700 hover:text-blue-900 underline font-semibold cursor-pointer"
-                  >
-                    {quickCustomMode ? "Pick from List" : "Type Custom Name"}
-                  </button>
-                </div>
-
-                {quickCustomMode ? (
-                  <input
-                    type="text"
-                    value={quickStaffName}
-                    onChange={(e) => setQuickStaffName(e.target.value)}
-                    placeholder="Type EMT or Staff Name..."
-                    className="w-full bg-white border-2 border-slate-300 focus:border-blue-600 rounded-lg px-3 py-2.5 text-sm font-semibold text-slate-900 placeholder-slate-400 focus:outline-none shadow-xs"
-                  />
-                ) : (
-                  <select
-                    value={quickStaffName}
-                    onChange={(e) => {
-                      if (e.target.value === "__custom__") {
-                        setQuickCustomMode(true);
-                      } else {
-                        setQuickStaffName(e.target.value);
-                      }
-                    }}
-                    className="w-full bg-white border-2 border-slate-300 focus:border-blue-600 rounded-lg px-3 py-2.5 text-sm font-semibold text-slate-900 focus:outline-none shadow-xs cursor-pointer"
-                  >
-                    <option value="">-- Choose Name from Pool (or Leave Blank for Vacant) --</option>
-                    {staffNamesList.map((name) => (
-                      <option key={name} value={name}>
-                        {name}
-                      </option>
-                    ))}
-                    <option value="__custom__">✏️ Type Custom Name Manually...</option>
-                  </select>
-                )}
-              </div>
-
-              {/* Step 3: Action Button */}
-              <div className="sm:col-span-3">
-                <button
-                  type="submit"
-                  className="w-full py-2.5 px-4 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-bold cursor-pointer transition-colors shadow-md flex items-center justify-center gap-1.5 active:scale-[0.99]"
-                >
-                  <Plus className="w-4 h-4" />
-                  <span>Assign to Roster</span>
-                </button>
-              </div>
-            </form>
-          </div>
-        )}
-
         {/* 4 Spacious Roster Sections Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
-          {/* Section 1: Command */}
+          {/* Section 1: Supervisors */}
           <div className="bg-slate-50/70 border border-slate-200 rounded-xl p-4 sm:p-5 flex flex-col justify-between shadow-2xs">
             <div className="space-y-4">
               <div className="flex items-center justify-between border-b border-slate-200 pb-2.5">
                 <div>
                   <h4 className="text-sm font-black uppercase font-mono tracking-wide text-red-700">
-                    Command Units
+                    Supervisors
                   </h4>
-                  <span className="text-[11px] text-slate-500 font-medium">790 & 170 Supervisors</span>
+                  <span className="text-[11px] text-slate-500 font-medium">790 & 170</span>
                 </div>
                 {getOccupancyBadge(supervisorRoster)}
               </div>
@@ -798,7 +648,7 @@ export default function DashboardView({
             </div>
           </div>
 
-          {/* Section 2: Theme Park EMT Patrols */}
+          {/* Section 2: Theme Park EMTs */}
           <div className="bg-slate-50/70 border border-slate-200 rounded-xl p-4 sm:p-5 flex flex-col justify-between shadow-2xs">
             <div className="space-y-4">
               <div className="flex items-center justify-between border-b border-slate-200 pb-2.5">
@@ -806,7 +656,7 @@ export default function DashboardView({
                   <h4 className="text-sm font-black uppercase font-mono tracking-wide text-blue-700">
                     Theme Park EMTs
                   </h4>
-                  <span className="text-[11px] text-slate-500 font-medium">791 – 798 Field Patrols</span>
+                  <span className="text-[11px] text-slate-500 font-medium">791 – 798</span>
                 </div>
                 {getOccupancyBadge(emtRoster)}
               </div>
@@ -831,7 +681,7 @@ export default function DashboardView({
                   <h4 className="text-sm font-black uppercase font-mono tracking-wide text-emerald-700">
                     Additional Support
                   </h4>
-                  <span className="text-[11px] text-slate-500 font-medium">EMS2 – EMS5 Stations/Rover</span>
+                  <span className="text-[11px] text-slate-500 font-medium">EMS2 – EMS5</span>
                 </div>
                 {getOccupancyBadge(supportRoster)}
               </div>
@@ -856,7 +706,7 @@ export default function DashboardView({
                   <h4 className="text-sm font-black uppercase font-mono tracking-wide text-purple-700">
                     Water Park EMTs
                   </h4>
-                  <span className="text-[11px] text-slate-500 font-medium">171 – 173 WP Patrols</span>
+                  <span className="text-[11px] text-slate-500 font-medium">171 – 173</span>
                 </div>
                 {getOccupancyBadge(rescueRoster)}
               </div>
