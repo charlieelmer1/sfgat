@@ -38,6 +38,20 @@ export default function DashboardView({
   const [editingRosterId, setEditingRosterId] = useState<string | null>(null);
   const [editedRosterName, setEditedRosterName] = useState("");
 
+  // Sync state when announcement or hours update from Firestore in background
+  React.useEffect(() => {
+    if (!isEditingAnnounce) {
+      setEditedAnnounce(announcement);
+    }
+  }, [announcement, isEditingAnnounce]);
+
+  React.useEffect(() => {
+    if (!isEditingHours) {
+      setEditedThemeHours(parkHours.themePark);
+      setEditedWaterHours(parkHours.waterPark);
+    }
+  }, [parkHours, isEditingHours]);
+
   const handleSaveHours = () => {
     onUpdateHours({
       themePark: editedThemeHours,

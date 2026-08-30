@@ -51,6 +51,20 @@ export default function SupervisorAdmin({
   // Edit predefined supervisors state
   const [localSups, setLocalSups] = useState<SupervisorChoice[]>([...predefinedSupervisorsList]);
 
+  // Keep state synced with Firestore real-time updates
+  React.useEffect(() => {
+    setEditedAnnounce(announcement);
+  }, [announcement]);
+
+  React.useEffect(() => {
+    setEditedThemeHours(parkHours.themePark);
+    setEditedWaterHours(parkHours.waterPark);
+  }, [parkHours]);
+
+  React.useEffect(() => {
+    setLocalSups([...predefinedSupervisorsList]);
+  }, [predefinedSupervisorsList]);
+
   const handleUpdateSups = (idx: number, field: "name" | "phone", value: string) => {
     const updated = [...localSups];
     updated[idx] = { ...updated[idx], [field]: value };
