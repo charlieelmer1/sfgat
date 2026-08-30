@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Shield, LayoutDashboard, BookOpen, FileText, Phone, Hash, Calendar, CloudSun, Calculator, ShieldCheck, LogOut, Menu, X, Clock } from "lucide-react";
+import { Shield, LayoutDashboard, BookOpen, FileText, Phone, Hash, Calendar, CloudSun, Calculator, ShieldCheck, LogOut, Menu, X, Clock, Database } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 
 // Components
@@ -12,6 +12,9 @@ import ScheduleView from "./components/ScheduleView";
 import WeatherView from "./components/WeatherView";
 import MedicalQRF from "./components/MedicalQRF";
 import SupervisorAdmin from "./components/SupervisorAdmin";
+
+// Firebase Firestore
+import { db, doc, setDoc, onSnapshot, SYSTEM_STATE_COLLECTION, SYSTEM_STATE_DOC } from "./firebase";
 
 // Types & Initial Data
 import {
@@ -68,14 +71,19 @@ export default function App() {
   const [predefinedSupervisorsList, setPredefinedSupervisorsList] = useState<SupervisorChoice[]>(PREDEFINED_SUPERVISORS);
 
   const [isLoaded, setIsLoaded] = useState(false);
+  const [firestoreConnected, setFirestoreConnected] = useState(false);
 
-  // Fetch full state from backend on mount
+  // 1. Primary Real-time Firestore Listener
   useEffect(() => {
-    isSyncingRef.current = true;
-    fetch("/api/state?t=" + Date.now(), { cache: "no-store" })
-      .then((res) => res.json())
-      .then((data) => {
-        if (data) {
+    const docRef = doc(db, SYSTEM_STATE_COLLECTION, SYSTEM_STATE_DOC);
+    
+    const unsubscribe = onSnapshot(
+      docRef,
+      (snapshot) => {
+        setFirestoreConnected(true);
+        if (snapshot.exists()) {
+          const data = snapshot.data();
+          isSyncingRef.current = true;
           if (data.parkHours) setParkHours(data.parkHours);
           if (data.announcement !== undefined) setAnnouncement(data.announcement);
           if (data.roster) setRoster(data.roster);
@@ -88,219 +96,149 @@ export default function App() {
           if (data.schedule) setSchedule(data.schedule);
           if (data.weatherData) setWeatherData(data.weatherData);
           if (data.predefinedSupervisorsList) setPredefinedSupervisorsList(data.predefinedSupervisorsList);
+          
+          setIsLoaded(true);
+          setTimeout(() => {
+            isSyncingRef.current = false;
+          }, 300);
+        } else {
+          // Document does not exist in Firestore yet: initialize it with default data
+          const initialState = {
+            parkHours: INITIAL_PARK_HOURS,
+            announcement: INITIAL_ANNOUNCEMENT,
+            roster: INITIAL_ROSTER,
+            protocols: INITIAL_PROTOCOLS,
+            sops: INITIAL_SOPS,
+            contacts: INITIAL_CONTACTS,
+            extensions: INITIAL_EXTENSIONS,
+            tenCodes: INITIAL_10_CODES,
+            signals: INITIAL_SIGNALS,
+            schedule: INITIAL_SCHEDULE,
+            weatherData: INITIAL_WEATHER,
+            predefinedSupervisorsList: PREDEFINED_SUPERVISORS,
+            updatedAt: new Date().toISOString(),
+          };
+          setDoc(docRef, initialState).catch(console.error);
+          setIsLoaded(true);
         }
-        setIsLoaded(true);
-        setTimeout(() => {
-          isSyncingRef.current = false;
-        }, 300);
-      })
-      .catch((err) => {
-        console.error("Error loading server state, falling back to local storage", err);
-        try {
-          const savedHours = localStorage.getItem("sfga_ems_hours");
-          if (savedHours) setParkHours(JSON.parse(savedHours));
-          const savedAnnouncement = localStorage.getItem("sfga_ems_announcement");
-          if (savedAnnouncement !== null) setAnnouncement(savedAnnouncement);
-          const savedRoster = localStorage.getItem("sfga_ems_roster");
-          if (savedRoster) setRoster(JSON.parse(savedRoster));
-          const savedProtocols = localStorage.getItem("sfga_ems_protocols");
-          if (savedProtocols) setProtocols(JSON.parse(savedProtocols));
-          const savedSops = localStorage.getItem("sfga_ems_sops");
-          if (savedSops) setSops(JSON.parse(savedSops));
-          const savedContacts = localStorage.getItem("sfga_ems_contacts");
-          if (savedContacts) setContacts(JSON.parse(savedContacts));
-          const savedExtensions = localStorage.getItem("sfga_ems_extensions");
-          if (savedExtensions) setExtensions(JSON.parse(savedExtensions));
-          const savedTenCodes = localStorage.getItem("sfga_ems_tencodes");
-          if (savedTenCodes) setTenCodes(JSON.parse(savedTenCodes));
-          const savedSignals = localStorage.getItem("sfga_ems_signals");
-          if (savedSignals) setSignals(JSON.parse(savedSignals));
-          const savedSchedule = localStorage.getItem("sfga_ems_schedule");
-          if (savedSchedule) setSchedule(JSON.parse(savedSchedule));
-          const savedWeather = localStorage.getItem("sfga_ems_weather");
-          if (savedWeather) setWeatherData(JSON.parse(savedWeather));
-          const savedPredef = localStorage.getItem("sfga_ems_predefined_supervisors");
-          if (savedPredef) setPredefinedSupervisorsList(JSON.parse(savedPredef));
-        } catch (e) {
-          console.error(e);
-        }
-        setIsLoaded(true);
-        setTimeout(() => {
-          isSyncingRef.current = false;
-        }, 300);
-      });
+      },
+      (error) => {
+        console.warn("Firestore listener error, falling back to REST API & LocalStorage:", error);
+        setFirestoreConnected(false);
+        // Fallback to server state
+        fetch("/api/state?t=" + Date.now(), { cache: "no-store" })
+          .then((res) => res.json())
+          .then((data) => {
+            if (data) {
+              if (data.parkHours) setParkHours(data.parkHours);
+              if (data.announcement !== undefined) setAnnouncement(data.announcement);
+              if (data.roster) setRoster(data.roster);
+              if (data.protocols) setProtocols(data.protocols);
+              if (data.sops) setSops(data.sops);
+              if (data.contacts) setContacts(data.contacts);
+              if (data.extensions) setExtensions(data.extensions);
+              if (data.tenCodes) setTenCodes(data.tenCodes);
+              if (data.signals) setSignals(data.signals);
+              if (data.schedule) setSchedule(data.schedule);
+              if (data.weatherData) setWeatherData(data.weatherData);
+              if (data.predefinedSupervisorsList) setPredefinedSupervisorsList(data.predefinedSupervisorsList);
+            }
+            setIsLoaded(true);
+          })
+          .catch(() => {
+            setIsLoaded(true);
+          });
+      }
+    );
+
+    return () => unsubscribe();
   }, []);
 
-  // Polling state from server for real-time multi-device synchronization
-  useEffect(() => {
-    if (!isLoaded) return;
-
-    const interval = setInterval(() => {
-      fetch("/api/state?t=" + Date.now(), { cache: "no-store" })
-        .then((res) => {
-          if (!res.ok) throw new Error("Sync fetch failed");
-          return res.json();
-        })
-        .then((data) => {
-          if (data) {
-            isSyncingRef.current = true;
-            if (data.parkHours) setParkHours(data.parkHours);
-            if (data.announcement !== undefined) setAnnouncement(data.announcement);
-            if (data.roster) setRoster(data.roster);
-            if (data.protocols) setProtocols(data.protocols);
-            if (data.sops) setSops(data.sops);
-            if (data.contacts) setContacts(data.contacts);
-            if (data.extensions) setExtensions(data.extensions);
-            if (data.tenCodes) setTenCodes(data.tenCodes);
-            if (data.signals) setSignals(data.signals);
-            if (data.schedule) setSchedule(data.schedule);
-            if (data.weatherData) setWeatherData(data.weatherData);
-            if (data.predefinedSupervisorsList) setPredefinedSupervisorsList(data.predefinedSupervisorsList);
-
-            setTimeout(() => {
-              isSyncingRef.current = false;
-            }, 300);
-          }
-        })
-        .catch((err) => {
-          console.warn("Real-time background sync failed:", err);
-        });
-    }, 4000); // Poll every 4 seconds
-
-    return () => clearInterval(interval);
-  }, [isLoaded]);
-
-  // Sync states with LocalStorage and Server
-  useEffect(() => {
-    if (!isLoaded) return;
-    localStorage.setItem("sfga_ems_hours", JSON.stringify(parkHours));
+  // Helper to save state changes to Firestore, Server API, and LocalStorage
+  const saveToCloudAndLocal = (key: string, value: any, localKey: string) => {
+    try {
+      localStorage.setItem(localKey, typeof value === "string" ? value : JSON.stringify(value));
+    } catch (e) {
+      console.error(e);
+    }
+    
     if (isSyncingRef.current) return;
+
+    // Save to Firestore
+    try {
+      const docRef = doc(db, SYSTEM_STATE_COLLECTION, SYSTEM_STATE_DOC);
+      setDoc(docRef, { [key]: value, updatedAt: new Date().toISOString() }, { merge: true }).catch(console.error);
+    } catch (err) {
+      console.warn("Firestore write error:", err);
+    }
+
+    // Save to Express server backup
     fetch("/api/state", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ parkHours }),
+      body: JSON.stringify({ [key]: value }),
     }).catch(console.error);
+  };
+
+  // Sync state changes
+  useEffect(() => {
+    if (!isLoaded) return;
+    saveToCloudAndLocal("parkHours", parkHours, "sfga_ems_hours");
   }, [parkHours, isLoaded]);
 
   useEffect(() => {
     if (!isLoaded) return;
-    localStorage.setItem("sfga_ems_announcement", announcement);
-    if (isSyncingRef.current) return;
-    fetch("/api/state", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ announcement }),
-    }).catch(console.error);
+    saveToCloudAndLocal("announcement", announcement, "sfga_ems_announcement");
   }, [announcement, isLoaded]);
 
   useEffect(() => {
     if (!isLoaded) return;
-    localStorage.setItem("sfga_ems_roster", JSON.stringify(roster));
-    if (isSyncingRef.current) return;
-    fetch("/api/state", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ roster }),
-    }).catch(console.error);
+    saveToCloudAndLocal("roster", roster, "sfga_ems_roster");
   }, [roster, isLoaded]);
 
   useEffect(() => {
     if (!isLoaded) return;
-    localStorage.setItem("sfga_ems_protocols", JSON.stringify(protocols));
-    if (isSyncingRef.current) return;
-    fetch("/api/state", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ protocols }),
-    }).catch(console.error);
+    saveToCloudAndLocal("protocols", protocols, "sfga_ems_protocols");
   }, [protocols, isLoaded]);
 
   useEffect(() => {
     if (!isLoaded) return;
-    localStorage.setItem("sfga_ems_sops", JSON.stringify(sops));
-    if (isSyncingRef.current) return;
-    fetch("/api/state", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ sops }),
-    }).catch(console.error);
+    saveToCloudAndLocal("sops", sops, "sfga_ems_sops");
   }, [sops, isLoaded]);
 
   useEffect(() => {
     if (!isLoaded) return;
-    localStorage.setItem("sfga_ems_contacts", JSON.stringify(contacts));
-    if (isSyncingRef.current) return;
-    fetch("/api/state", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ contacts }),
-    }).catch(console.error);
+    saveToCloudAndLocal("contacts", contacts, "sfga_ems_contacts");
   }, [contacts, isLoaded]);
 
   useEffect(() => {
     if (!isLoaded) return;
-    localStorage.setItem("sfga_ems_extensions", JSON.stringify(extensions));
-    if (isSyncingRef.current) return;
-    fetch("/api/state", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ extensions }),
-    }).catch(console.error);
+    saveToCloudAndLocal("extensions", extensions, "sfga_ems_extensions");
   }, [extensions, isLoaded]);
 
   useEffect(() => {
     if (!isLoaded) return;
-    localStorage.setItem("sfga_ems_tencodes", JSON.stringify(tenCodes));
-    if (isSyncingRef.current) return;
-    fetch("/api/state", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ tenCodes }),
-    }).catch(console.error);
+    saveToCloudAndLocal("tenCodes", tenCodes, "sfga_ems_tencodes");
   }, [tenCodes, isLoaded]);
 
   useEffect(() => {
     if (!isLoaded) return;
-    localStorage.setItem("sfga_ems_signals", JSON.stringify(signals));
-    if (isSyncingRef.current) return;
-    fetch("/api/state", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ signals }),
-    }).catch(console.error);
+    saveToCloudAndLocal("signals", signals, "sfga_ems_signals");
   }, [signals, isLoaded]);
 
   useEffect(() => {
     if (!isLoaded) return;
-    localStorage.setItem("sfga_ems_schedule", JSON.stringify(schedule));
-    if (isSyncingRef.current) return;
-    fetch("/api/state", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ schedule }),
-    }).catch(console.error);
+    saveToCloudAndLocal("schedule", schedule, "sfga_ems_schedule");
   }, [schedule, isLoaded]);
 
   useEffect(() => {
     if (!isLoaded) return;
-    localStorage.setItem("sfga_ems_weather", JSON.stringify(weatherData));
-    if (isSyncingRef.current) return;
-    fetch("/api/state", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ weatherData }),
-    }).catch(console.error);
+    saveToCloudAndLocal("weatherData", weatherData, "sfga_ems_weather");
   }, [weatherData, isLoaded]);
 
   useEffect(() => {
     if (!isLoaded) return;
-    localStorage.setItem("sfga_ems_predefined_supervisors", JSON.stringify(predefinedSupervisorsList));
-    if (isSyncingRef.current) return;
-    fetch("/api/state", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ predefinedSupervisorsList }),
-    }).catch(console.error);
+    saveToCloudAndLocal("predefinedSupervisorsList", predefinedSupervisorsList, "sfga_ems_predefined_supervisors");
   }, [predefinedSupervisorsList, isLoaded]);
 
   // Auth Operations
@@ -383,6 +321,30 @@ export default function App() {
 
   // Emergency dataset reset
   const handleResetToDefaults = () => {
+    const defaultData = {
+      parkHours: INITIAL_PARK_HOURS,
+      announcement: INITIAL_ANNOUNCEMENT,
+      roster: INITIAL_ROSTER,
+      protocols: INITIAL_PROTOCOLS,
+      sops: INITIAL_SOPS,
+      contacts: INITIAL_CONTACTS,
+      extensions: INITIAL_EXTENSIONS,
+      tenCodes: INITIAL_10_CODES,
+      signals: INITIAL_SIGNALS,
+      schedule: INITIAL_SCHEDULE,
+      weatherData: INITIAL_WEATHER,
+      predefinedSupervisorsList: PREDEFINED_SUPERVISORS,
+      updatedAt: new Date().toISOString(),
+    };
+
+    // Reset Firestore doc
+    try {
+      const docRef = doc(db, SYSTEM_STATE_COLLECTION, SYSTEM_STATE_DOC);
+      setDoc(docRef, defaultData).catch(console.error);
+    } catch (e) {
+      console.error("Firestore reset error:", e);
+    }
+
     fetch("/api/reset", { method: "POST" })
       .then((res) => res.json())
       .then((data) => {
@@ -460,11 +422,21 @@ export default function App() {
         </div>
 
         {/* Desktop Quick Header Details */}
-        <div className="hidden lg:flex items-center gap-6 text-xs font-mono border-l border-blue-800 pl-6 text-slate-300">
+        <div className="hidden lg:flex items-center gap-4 text-xs font-mono border-l border-blue-800 pl-6 text-slate-300">
           <div className="flex items-center gap-1.5">
             <Clock className="w-4 h-4 text-blue-300" />
             <span>EST: {new Date().toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}</span>
           </div>
+
+          <div className="flex items-center gap-1.5 bg-blue-950/70 px-2.5 py-1 rounded border border-blue-800 text-[11px]">
+            <Database className="w-3.5 h-3.5 text-amber-400" />
+            <span className="flex items-center gap-1 text-slate-200 font-sans font-medium">
+              Firestore:
+              <span className={`inline-block w-2 h-2 rounded-full ${firestoreConnected ? "bg-green-400 animate-pulse" : "bg-yellow-400"}`} />
+              <span className="font-mono text-[10px] text-slate-300">{firestoreConnected ? "Live" : "Connecting"}</span>
+            </span>
+          </div>
+
           <div className="flex items-center gap-1.5 bg-blue-950/50 px-3 py-1 rounded-md border border-blue-800">
             <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
             <span className="font-bold uppercase text-[10px] tracking-wide text-white">

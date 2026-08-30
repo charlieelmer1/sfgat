@@ -73,6 +73,31 @@ async function startServer() {
   });
 
   // API endpoints
+  app.post("/api/login", (req, res) => {
+    const { username, password } = req.body;
+    const normUser = (username || "").trim();
+    const normPass = (password || "").trim();
+
+    if (normUser === "EMT" && normPass === "SFGA2026") {
+      res.json({ success: true, role: "EMT" });
+    } else if (normUser === "790" && normPass === "790supervisor2026") {
+      res.json({ success: true, role: "Supervisor" });
+    } else {
+      res.status(401).json({ success: false, error: "Invalid username or password. Please verify credentials." });
+    }
+  });
+
+  app.post("/api/verify-reset", (req, res) => {
+    const { password } = req.body;
+    const normPass = (password || "").trim();
+
+    if (normPass === "ELMER") {
+      res.json({ success: true });
+    } else {
+      res.status(401).json({ success: false, error: "❌ ACCESS DENIED: Incorrect supervisor password." });
+    }
+  });
+
   app.get("/api/state", (req, res) => {
     res.json(loadDb());
   });

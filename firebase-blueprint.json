@@ -1,0 +1,29 @@
+{
+  "entities": {
+    "systemState": {
+      "title": "System State",
+      "description": "SFGA EMS Command Portal state including hours, roster, protocols, and logs",
+      "type": "object",
+      "properties": {
+        "parkHours": { "type": "object" },
+        "supervisor": { "type": "object" },
+        "announcement": { "type": "string" },
+        "predefinedSupervisorsList": { "type": "array" },
+        "protocols": { "type": "array" },
+        "sops": { "type": "array" },
+        "roster": { "type": "array" },
+        "contacts": { "type": "array" },
+        "phoneExtensions": { "type": "array" },
+        "tenCodes": { "type": "array" },
+        "signals": { "type": "array" },
+        "weeklySchedule": { "type": "object" },
+        "updatedAt": { "type": "string" }
+      }
+    }
+  },
+  "firestore": {
+    "/system_state/current": {
+      "entity": "systemState"
+    }
+  }
+}

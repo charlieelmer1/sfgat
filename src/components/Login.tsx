@@ -17,19 +17,31 @@ export default function Login({ onLoginSuccess }: LoginProps) {
     setError("");
     setIsLoading(true);
 
-    setTimeout(() => {
-      const normUser = username.trim();
-      const normPass = password.trim();
-
-      if (normUser === "EMT" && normPass === "SFGA2026") {
-        onLoginSuccess("EMT");
-      } else if (normUser === "790" && normPass === "790supervisor2026") {
-        onLoginSuccess("Supervisor");
-      } else {
-        setError("Invalid username or password. Please verify credentials.");
-      }
-      setIsLoading(false);
-    }, 600);
+    fetch("/api/login", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        username,
+        password,
+      }),
+    })
+      .then(async (res) => {
+        const data = await res.json();
+        if (res.ok && data.success) {
+          onLoginSuccess(data.role);
+        } else {
+          setError(data.error || "Invalid username or password. Please verify credentials.");
+        }
+      })
+      .catch((err) => {
+        console.error("Login verification failed:", err);
+        setError("Network error. Please try again.");
+      })
+      .finally(() => {
+        setIsLoading(false);
+      });
   };
 
   const fillCredentials = (user: string, pass: string) => {

@@ -73,23 +73,37 @@ export default function SupervisorAdmin({
   };
 
   const handleResetSystem = () => {
-    if (resetPassword !== "ELMER") {
-      setPasswordError("❌ ACCESS DENIED: Incorrect supervisor password.");
-      return;
-    }
-
-    if (confirm("🚨 WARNING: This will reset all Medical Protocols, SOPs, Roster, Contacts, Extensions, 10-Codes, and Schedules back to their factory defaults. Any customized edits will be overwritten. Continue?")) {
-      onResetToDefaults();
-      setHasReset(true);
-      setResetPassword("");
-      setPasswordError("");
-      // Refresh local states
-      setEditedThemeHours(parkHours.themePark);
-      setEditedWaterHours(parkHours.waterPark);
-      setEditedAnnounce(announcement);
-      setLocalSups([...predefinedSupervisorsList]);
-      setTimeout(() => setHasReset(false), 2000);
-    }
+    setPasswordError("");
+    fetch("/api/verify-reset", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ password: resetPassword }),
+    })
+      .then(async (res) => {
+        const data = await res.json();
+        if (res.ok && data.success) {
+          if (confirm("🚨 WARNING: This will reset all Medical Protocols, SOPs, Roster, Contacts, Extensions, 10-Codes, and Schedules back to their factory defaults. Any customized edits will be overwritten. Continue?")) {
+            onResetToDefaults();
+            setHasReset(true);
+            setResetPassword("");
+            setPasswordError("");
+            // Refresh local states
+            setEditedThemeHours(parkHours.themePark);
+            setEditedWaterHours(parkHours.waterPark);
+            setEditedAnnounce(announcement);
+            setLocalSups([...predefinedSupervisorsList]);
+            setTimeout(() => setHasReset(false), 2000);
+          }
+        } else {
+          setPasswordError(data.error || "❌ ACCESS DENIED: Incorrect supervisor password.");
+        }
+      })
+      .catch((err) => {
+        console.error("Password verification failed:", err);
+        setPasswordError("❌ Network error. Please try again.");
+      });
   };
 
   return (
