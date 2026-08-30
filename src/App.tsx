@@ -506,21 +506,6 @@ export default function App() {
               );
             })}
           </nav>
-
-          <div className="pt-6 border-t border-slate-700 mt-6 px-3">
-            <span className="text-[9px] font-mono text-slate-500 uppercase leading-relaxed block">
-              Active Station:
-            </span>
-            <div className="text-[10px] font-mono text-slate-400 mt-1 uppercase font-bold truncate">
-              {userRole === "Supervisor" ? "COMMAND-790" : "PATROL-EMT"}
-            </div>
-            <button
-              onClick={handleLogout}
-              className="mt-4 w-full flex sm:hidden items-center justify-center gap-1 bg-red-700 hover:bg-red-800 text-white py-2 rounded text-xs font-bold cursor-pointer"
-            >
-              <LogOut className="w-3 h-3" /> Disconnect
-            </button>
-          </div>
         </aside>
 
         {/* Mobile Navigation Drawer */}

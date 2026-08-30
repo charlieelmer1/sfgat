@@ -115,7 +115,7 @@ export default function Login({ onLoginSuccess }: LoginProps) {
             </div>
           </div>
           <div>
-            <h1 className="text-sm font-black tracking-wider text-slate-900">SFGA EMS COMMAND POST</h1>
+            <h1 className="text-sm font-black tracking-wider text-slate-900">SFGA EMS PORTAL</h1>
             <span className="text-[10px] text-slate-500 font-mono block">SIX FLAGS GREAT ADVENTURE &bull; NJ</span>
           </div>
         </div>
@@ -130,7 +130,7 @@ export default function Login({ onLoginSuccess }: LoginProps) {
           className="bg-white border border-slate-200 rounded-2xl shadow-xl border-t-4 border-t-blue-900 p-6 sm:p-8 space-y-6"
         >
           <div className="text-center space-y-1">
-            <h2 className="text-2xl font-extrabold tracking-tight text-slate-900">Sign In to Command Portal</h2>
+            <h2 className="text-2xl font-extrabold tracking-tight text-slate-900">Sign Into Portal</h2>
             <p className="text-slate-500 text-xs font-medium">
               Access real-time park communications, shift rosters, and medical SOPs.
             </p>
@@ -199,13 +199,6 @@ export default function Login({ onLoginSuccess }: LoginProps) {
           </form>
         </motion.div>
       </main>
-
-      {/* Footer Branding */}
-      <footer className="relative z-10 w-full max-w-md mx-auto text-center">
-        <p className="text-[10px] text-slate-500 font-mono leading-relaxed uppercase">
-          SECURE COMMUNICATIONS PORTAL &copy; {new Date().getFullYear()} SIX FLAGS GREAT ADVENTURE SAFETY & SECURITY.
-        </p>
-      </footer>
     </div>
   );
 }
