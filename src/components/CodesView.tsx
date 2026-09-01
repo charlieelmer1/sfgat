@@ -224,9 +224,6 @@ export default function CodesView({
             <Hash className="w-6 h-6 text-red-650" />
             Park 10-Codes & Signals Registry
           </h2>
-          <p className="text-slate-500 text-sm mt-1">
-            Standardized operational radiospeak codes and urgent safety signaling systems.
-          </p>
         </div>
 
         {/* Tab Selection */}

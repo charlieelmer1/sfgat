@@ -163,9 +163,6 @@ export default function DirectoryView({
             <Phone className="w-6 h-6 text-red-650" />
             Park Communications Directory
           </h2>
-          <p className="text-slate-500 text-sm mt-1">
-            Emergency hotlines, regional medical agencies, and internal park department phone extensions.
-          </p>
         </div>
 
         {/* Directory/Extensions Sub-selector */}

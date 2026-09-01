@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Shield, LayoutDashboard, BookOpen, FileText, Phone, Hash, Calendar, CloudSun, Calculator, ShieldCheck, LogOut, Menu, X, Clock, Database } from "lucide-react";
+import { Shield, LayoutDashboard, BookOpen, FileText, Phone, Hash, Calendar, CloudSun, Calculator, ShieldCheck, LogOut, Menu, X, Clock, Database, Map, Compass, Ghost, ChevronDown, ChevronRight } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 
 // Components
@@ -12,6 +12,7 @@ import ScheduleView from "./components/ScheduleView";
 import WeatherView from "./components/WeatherView";
 import MedicalQRF from "./components/MedicalQRF";
 import SupervisorAdmin from "./components/SupervisorAdmin";
+import ParkMapView from "./components/ParkMapView";
 
 // Firebase Firestore
 import { db, doc, setDoc, onSnapshot, SYSTEM_STATE_COLLECTION, SYSTEM_STATE_DOC } from "./firebase";
@@ -28,6 +29,9 @@ import {
   WeeklySchedule,
   WeatherData,
   SupervisorChoice,
+  ParkMapsState,
+  ParkMapItem,
+  INITIAL_PARK_MAPS,
   PREDEFINED_SUPERVISORS,
   INITIAL_PARK_HOURS,
   INITIAL_ANNOUNCEMENT,
@@ -55,6 +59,8 @@ export default function App() {
 
   // Navigation State
   const [activeTab, setActiveTab] = useState<string>("dashboard");
+  const [activeMapSection, setActiveMapSection] = useState<"operational" | "frightFest">("operational");
+  const [parkMapExpanded, setParkMapExpanded] = useState<boolean>(true);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   // Core Datasets (Initial empty/defaults, hydrated from server on mount)
@@ -71,6 +77,7 @@ export default function App() {
   const [weatherData, setWeatherData] = useState<WeatherData>(INITIAL_WEATHER);
   const [predefinedSupervisorsList, setPredefinedSupervisorsList] = useState<SupervisorChoice[]>(PREDEFINED_SUPERVISORS);
   const [staffNamesList, setStaffNamesList] = useState<string[]>(INITIAL_STAFF_NAMES);
+  const [maps, setMaps] = useState<ParkMapsState>(INITIAL_PARK_MAPS);
 
   const [isLoaded, setIsLoaded] = useState(false);
   const [firestoreConnected, setFirestoreConnected] = useState(false);
@@ -99,6 +106,7 @@ export default function App() {
           if (data.weatherData) setWeatherData(data.weatherData);
           if (data.predefinedSupervisorsList) setPredefinedSupervisorsList(data.predefinedSupervisorsList);
           if (data.staffNamesList) setStaffNamesList(data.staffNamesList);
+          if (data.maps) setMaps(data.maps);
           
           setIsLoaded(true);
           setTimeout(() => {
@@ -120,6 +128,7 @@ export default function App() {
             weatherData: INITIAL_WEATHER,
             predefinedSupervisorsList: PREDEFINED_SUPERVISORS,
             staffNamesList: INITIAL_STAFF_NAMES,
+            maps: INITIAL_PARK_MAPS,
             updatedAt: new Date().toISOString(),
           };
           setDoc(docRef, initialState).catch(console.error);
@@ -147,6 +156,7 @@ export default function App() {
               if (data.weatherData) setWeatherData(data.weatherData);
               if (data.predefinedSupervisorsList) setPredefinedSupervisorsList(data.predefinedSupervisorsList);
               if (data.staffNamesList) setStaffNamesList(data.staffNamesList);
+              if (data.maps) setMaps(data.maps);
             }
             setIsLoaded(true);
           })
@@ -251,6 +261,11 @@ export default function App() {
     saveToCloudAndLocal("staffNamesList", staffNamesList, "sfga_ems_staff_names");
   }, [staffNamesList, isLoaded]);
 
+  useEffect(() => {
+    if (!isLoaded) return;
+    saveToCloudAndLocal("maps", maps, "sfga_ems_maps");
+  }, [maps, isLoaded]);
+
   // Auth Operations
   const handleLoginSuccess = (role: "EMT" | "Supervisor") => {
     setUserRole(role);
@@ -272,6 +287,13 @@ export default function App() {
   };
 
   const handleUpdateWeather = (data: WeatherData) => setWeatherData(data);
+
+  const handleUpdateMap = (mapId: "operational" | "frightFest", mapItem: ParkMapItem) => {
+    setMaps((prev) => ({
+      ...prev,
+      [mapId]: mapItem,
+    }));
+  };
 
   const handleUpdateScheduleDay = (day: string, role: "sup790" | "sup170", supervisor: SupervisorChoice) => {
     setSchedule((prev) => ({
@@ -349,6 +371,7 @@ export default function App() {
       weatherData: INITIAL_WEATHER,
       predefinedSupervisorsList: PREDEFINED_SUPERVISORS,
       staffNamesList: INITIAL_STAFF_NAMES,
+      maps: INITIAL_PARK_MAPS,
       updatedAt: new Date().toISOString(),
     };
 
@@ -377,6 +400,7 @@ export default function App() {
           setWeatherData(INITIAL_WEATHER);
           setPredefinedSupervisorsList(PREDEFINED_SUPERVISORS);
           setStaffNamesList(INITIAL_STAFF_NAMES);
+          setMaps(INITIAL_PARK_MAPS);
         }
       })
       .catch((err) => {
@@ -394,6 +418,7 @@ export default function App() {
         setWeatherData(INITIAL_WEATHER);
         setPredefinedSupervisorsList(PREDEFINED_SUPERVISORS);
         setStaffNamesList(INITIAL_STAFF_NAMES);
+        setMaps(INITIAL_PARK_MAPS);
       });
     localStorage.clear();
   };
@@ -430,7 +455,7 @@ export default function App() {
           </div>
           <div>
             <h1 className="text-sm font-black tracking-wider text-white uppercase leading-none font-sans">
-              SFGA EMS <span className="font-normal opacity-75">OPERATIONS</span>
+              Six Flags Great Adventure EMS
             </h1>
           </div>
         </div>
@@ -451,12 +476,14 @@ export default function App() {
             </span>
           </div>
 
-          <div className="flex items-center gap-1.5 bg-blue-950/50 px-3 py-1 rounded-md border border-blue-800">
-            <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
-            <span className="font-bold uppercase text-[10px] tracking-wide text-white">
-              {userRole === "Supervisor" ? "790 - Supervisor Access" : "EMT Standard Access"}
-            </span>
-          </div>
+          {userRole === "Supervisor" && (
+            <div className="flex items-center gap-1.5 bg-blue-950/50 px-3 py-1 rounded-md border border-blue-800">
+              <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
+              <span className="font-bold uppercase text-[10px] tracking-wide text-white">
+                790 - Supervisor Access
+              </span>
+            </div>
+          )}
         </div>
 
         {/* Mobile menu trigger + Logout */}
@@ -482,29 +509,123 @@ export default function App() {
       <div className="flex-1 flex flex-col md:flex-row relative">
         
         {/* Sidebar Navigation - Desktop */}
-        <aside className="hidden md:block w-64 bg-slate-800 border-r border-slate-700 p-4 space-y-1 shrink-0 text-slate-300">
-          <span className="text-[10px] uppercase font-mono tracking-widest text-slate-400 font-bold block mb-3.5 px-3">
+        <aside className="hidden md:block w-64 bg-slate-800 border-r border-slate-700 p-4 space-y-2 shrink-0 text-slate-300">
+          <span className="text-[10px] uppercase font-mono tracking-widest text-slate-400 font-bold block mb-2 px-3">
             Navigation
           </span>
           <nav className="space-y-1">
-            {navItems.map((item) => {
-              const Icon = item.icon;
-              const isActive = activeTab === item.id;
-              return (
+            {/* Dashboard Link */}
+            <button
+              onClick={() => setActiveTab("dashboard")}
+              className={`w-full flex items-center gap-3 px-4 py-2.5 rounded transition-all cursor-pointer text-sm ${
+                activeTab === "dashboard"
+                  ? "bg-slate-700 text-white font-bold border-r-4 border-r-red-600"
+                  : "text-slate-300 hover:text-white hover:bg-slate-700/50"
+              }`}
+            >
+              <LayoutDashboard className={`w-4 h-4 shrink-0 ${activeTab === "dashboard" ? "text-white" : "text-slate-400"}`} />
+              Dashboard
+            </button>
+
+            {/* Park Map Section with 2 Sub-Sections */}
+            <div className="pt-1.5 pb-1">
+              <div
+                onClick={() => {
+                  setParkMapExpanded(!parkMapExpanded);
+                  if (activeTab !== "maps") {
+                    setActiveTab("maps");
+                    setActiveMapSection("operational");
+                  }
+                }}
+                className={`w-full flex items-center justify-between px-4 py-2.5 rounded transition-all cursor-pointer text-sm ${
+                  activeTab === "maps"
+                    ? "bg-slate-700 text-white font-bold border-r-4 border-r-red-600"
+                    : "text-slate-300 hover:text-white hover:bg-slate-700/50"
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <Map className={`w-4 h-4 shrink-0 ${activeTab === "maps" ? "text-blue-400" : "text-slate-400"}`} />
+                  <span>Park Map</span>
+                </div>
                 <button
-                  key={item.id}
-                  onClick={() => setActiveTab(item.id)}
-                  className={`w-full flex items-center gap-3 px-4 py-2.5 rounded transition-all cursor-pointer text-sm ${
-                    isActive
-                      ? "bg-slate-700 text-white font-bold border-r-4 border-r-red-600"
-                      : "text-slate-300 hover:text-white hover:bg-slate-700/50"
-                  }`}
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setParkMapExpanded(!parkMapExpanded);
+                  }}
+                  className="p-1 text-slate-400 hover:text-white"
                 >
-                  <Icon className={`w-4 h-4 shrink-0 ${isActive ? "text-white" : "text-slate-400"}`} />
-                  {item.label}
+                  {parkMapExpanded ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
                 </button>
-              );
-            })}
+              </div>
+
+              {/* 2 Sub-Sections */}
+              {parkMapExpanded && (
+                <div className="pl-6 pt-1 space-y-1">
+                  <button
+                    onClick={() => {
+                      setActiveTab("maps");
+                      setActiveMapSection("operational");
+                    }}
+                    className={`w-full flex items-center justify-between px-3 py-1.5 rounded text-xs transition-all cursor-pointer ${
+                      activeTab === "maps" && activeMapSection === "operational"
+                        ? "bg-blue-900/70 text-blue-200 font-bold border-l-2 border-l-blue-400"
+                        : "text-slate-400 hover:text-slate-200 hover:bg-slate-700/40"
+                    }`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <Compass className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                      <span>Operational Map</span>
+                    </div>
+                    {maps.operational?.imageData && (
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" title="PNG Loaded" />
+                    )}
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      setActiveTab("maps");
+                      setActiveMapSection("frightFest");
+                    }}
+                    className={`w-full flex items-center justify-between px-3 py-1.5 rounded text-xs transition-all cursor-pointer ${
+                      activeTab === "maps" && activeMapSection === "frightFest"
+                        ? "bg-purple-900/70 text-purple-200 font-bold border-l-2 border-l-purple-400"
+                        : "text-slate-400 hover:text-slate-200 hover:bg-slate-700/40"
+                    }`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <Ghost className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                      <span>Fright Fest Map</span>
+                    </div>
+                    {maps.frightFest?.imageData && (
+                      <span className="w-1.5 h-1.5 rounded-full bg-amber-400" title="PNG Loaded" />
+                    )}
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* Other Navigation Items */}
+            {navItems
+              .filter((item) => item.id !== "dashboard")
+              .map((item) => {
+                const Icon = item.icon;
+                const isActive = activeTab === item.id;
+                return (
+                  <button
+                    key={item.id}
+                    onClick={() => setActiveTab(item.id)}
+                    className={`w-full flex items-center gap-3 px-4 py-2.5 rounded transition-all cursor-pointer text-sm ${
+                      isActive
+                        ? "bg-slate-700 text-white font-bold border-r-4 border-r-red-600"
+                        : "text-slate-300 hover:text-white hover:bg-slate-700/50"
+                    }`}
+                  >
+                    <Icon className={`w-4 h-4 shrink-0 ${isActive ? "text-white" : "text-slate-400"}`} />
+                    {item.label}
+                  </button>
+                );
+              })}
           </nav>
         </aside>
 
@@ -516,33 +637,105 @@ export default function App() {
               animate={{ opacity: 1, height: "auto" }}
               exit={{ opacity: 0, height: 0 }}
               transition={{ duration: 0.2 }}
-              className="md:hidden bg-slate-800 border-b border-slate-700 px-4 py-3 space-y-1 z-30 absolute top-0 left-0 right-0 shadow-2xl text-slate-300"
+              className="md:hidden bg-slate-800 border-b border-slate-700 px-4 py-3 space-y-1 z-30 absolute top-0 left-0 right-0 shadow-2xl text-slate-300 max-h-[85vh] overflow-y-auto"
             >
               <span className="text-[9px] uppercase font-mono tracking-widest text-slate-400 block mb-2 px-2">
                 Navigation
               </span>
               <nav className="space-y-1">
-                {navItems.map((item) => {
-                  const Icon = item.icon;
-                  const isActive = activeTab === item.id;
-                  return (
+                {/* Mobile Dashboard */}
+                <button
+                  onClick={() => {
+                    setActiveTab("dashboard");
+                    setMobileMenuOpen(false);
+                  }}
+                  className={`w-full flex items-center gap-3 px-4 py-2.5 rounded transition-all cursor-pointer text-sm ${
+                    activeTab === "dashboard"
+                      ? "bg-slate-700 text-white font-bold border-r-4 border-r-red-600"
+                      : "text-slate-300 hover:text-white hover:bg-slate-700"
+                  }`}
+                >
+                  <LayoutDashboard className="w-4 h-4 shrink-0" />
+                  Dashboard
+                </button>
+
+                {/* Mobile Park Map Section */}
+                <div className="py-1">
+                  <div
+                    onClick={() => {
+                      setActiveTab("maps");
+                      setActiveMapSection("operational");
+                      setMobileMenuOpen(false);
+                    }}
+                    className={`w-full flex items-center justify-between px-4 py-2 rounded text-sm cursor-pointer ${
+                      activeTab === "maps"
+                        ? "bg-slate-700 text-white font-bold"
+                        : "text-slate-300 hover:text-white hover:bg-slate-700"
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <Map className="w-4 h-4 shrink-0 text-blue-400" />
+                      <span>Park Map</span>
+                    </div>
+                  </div>
+                  <div className="pl-6 pt-1 space-y-1">
                     <button
-                      key={item.id}
                       onClick={() => {
-                        setActiveTab(item.id);
+                        setActiveTab("maps");
+                        setActiveMapSection("operational");
                         setMobileMenuOpen(false);
                       }}
-                      className={`w-full flex items-center gap-3 px-4 py-2.5 rounded transition-all cursor-pointer text-sm ${
-                        isActive
-                          ? "bg-slate-700 text-white font-bold border-r-4 border-r-red-600"
-                          : "text-slate-300 hover:text-white hover:bg-slate-700"
+                      className={`w-full flex items-center gap-2 px-3 py-1.5 rounded text-xs transition-all cursor-pointer ${
+                        activeTab === "maps" && activeMapSection === "operational"
+                          ? "bg-blue-900 text-blue-200 font-bold"
+                          : "text-slate-400 hover:text-slate-200"
                       }`}
                     >
-                      <Icon className="w-4 h-4 shrink-0" />
-                      {item.label}
+                      <Compass className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                      <span>Operational Map</span>
                     </button>
-                  );
-                })}
+                    <button
+                      onClick={() => {
+                        setActiveTab("maps");
+                        setActiveMapSection("frightFest");
+                        setMobileMenuOpen(false);
+                      }}
+                      className={`w-full flex items-center gap-2 px-3 py-1.5 rounded text-xs transition-all cursor-pointer ${
+                        activeTab === "maps" && activeMapSection === "frightFest"
+                          ? "bg-purple-900 text-purple-200 font-bold"
+                          : "text-slate-400 hover:text-slate-200"
+                      }`}
+                    >
+                      <Ghost className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                      <span>Fright Fest Map</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Other Navigation Items */}
+                {navItems
+                  .filter((item) => item.id !== "dashboard")
+                  .map((item) => {
+                    const Icon = item.icon;
+                    const isActive = activeTab === item.id;
+                    return (
+                      <button
+                        key={item.id}
+                        onClick={() => {
+                          setActiveTab(item.id);
+                          setMobileMenuOpen(false);
+                        }}
+                        className={`w-full flex items-center gap-3 px-4 py-2.5 rounded transition-all cursor-pointer text-sm ${
+                          isActive
+                            ? "bg-slate-700 text-white font-bold border-r-4 border-r-red-600"
+                            : "text-slate-300 hover:text-white hover:bg-slate-700"
+                        }`}
+                      >
+                        <Icon className="w-4 h-4 shrink-0" />
+                        {item.label}
+                      </button>
+                    );
+                  })}
               </nav>
               <div className="pt-3 border-t border-slate-700 mt-3 flex justify-between items-center px-2">
                 <span className="text-[10px] font-mono text-slate-400 uppercase">Role: {userRole}</span>
@@ -581,6 +774,16 @@ export default function App() {
                   onNavigateToTab={(tabId) => setActiveTab(tabId)}
                   staffNamesList={staffNamesList}
                   onUpdateStaffNamesList={handleUpdateStaffNamesList}
+                />
+              )}
+
+              {activeTab === "maps" && (
+                <ParkMapView
+                  userRole={userRole}
+                  maps={maps}
+                  onUpdateMap={handleUpdateMap}
+                  activeSection={activeMapSection}
+                  onSectionChange={(sec) => setActiveMapSection(sec)}
                 />
               )}
 

@@ -112,9 +112,6 @@ export default function ScheduleView({ userRole, schedule, onUpdateScheduleDay }
             <Calendar className="w-6 h-6 text-red-650" />
             Supervisor Monthly Schedule
           </h2>
-          <p className="text-slate-500 text-sm mt-1">
-            Assigned administrative on-duty command supervisors for daily operations.
-          </p>
         </div>
         
         {/* Month Navigation Panel */}
@@ -279,7 +276,6 @@ export default function ScheduleView({ userRole, schedule, onUpdateScheduleDay }
                   ) : (
                     <div>
                       <h4 className="text-xs font-bold text-slate-800 truncate">{activeDaily.sup790?.name}</h4>
-                      <p className="text-[10px] text-slate-500 font-mono mt-0.5">Primary Command Supervisor</p>
                     </div>
                   )}
                 </div>
@@ -287,7 +283,7 @@ export default function ScheduleView({ userRole, schedule, onUpdateScheduleDay }
 
               {!isSupervisor && (
                 <div className="border-t border-slate-200/60 pt-2 flex justify-between items-center">
-                  <span className="text-[9px] text-slate-400 font-mono">EMERGENCY CONTACT</span>
+                  <span className="text-[9px] text-slate-400 font-mono">CONTACT NUMBER</span>
                   <a
                     href={`tel:${activeDaily.sup790?.phone}`}
                     className="text-[10px] font-mono text-blue-900 hover:text-blue-750 font-extrabold flex items-center gap-1 bg-white hover:bg-blue-50/50 px-2 py-1 rounded border border-slate-200"
@@ -332,7 +328,6 @@ export default function ScheduleView({ userRole, schedule, onUpdateScheduleDay }
                   ) : (
                     <div>
                       <h4 className="text-xs font-bold text-slate-800 truncate">{activeDaily.sup170?.name}</h4>
-                      <p className="text-[10px] text-slate-500 font-mono mt-0.5">Tactical Support Supervisor</p>
                     </div>
                   )}
                 </div>
@@ -340,7 +335,7 @@ export default function ScheduleView({ userRole, schedule, onUpdateScheduleDay }
 
               {!isSupervisor && (
                 <div className="border-t border-slate-200/60 pt-2 flex justify-between items-center">
-                  <span className="text-[9px] text-slate-400 font-mono">EMERGENCY CONTACT</span>
+                  <span className="text-[9px] text-slate-400 font-mono">CONTACT NUMBER</span>
                   <a
                     href={`tel:${activeDaily.sup170?.phone}`}
                     className="text-[10px] font-mono text-blue-900 hover:text-blue-750 font-extrabold flex items-center gap-1 bg-white hover:bg-blue-50/50 px-2 py-1 rounded border border-slate-200"
@@ -351,13 +346,6 @@ export default function ScheduleView({ userRole, schedule, onUpdateScheduleDay }
               )}
             </div>
 
-          </div>
-
-          <div className="bg-slate-50 p-4 rounded border border-slate-200 text-[11px] text-slate-500 leading-relaxed font-sans flex items-start gap-2">
-            <Info className="w-4 h-4 text-slate-400 shrink-0 mt-0.5" />
-            <div>
-              <span>This calendar governs active communications routing for dispatcher call signs. Any updates saved will reflect immediately on operational displays.</span>
-            </div>
           </div>
         </div>
 

@@ -38,6 +38,7 @@ export default function DashboardView({
   onUpdateRosterItem,
   weatherData,
   onNavigateToTab,
+  staffNamesList,
 }: DashboardViewProps) {
   const isSupervisor = userRole === "Supervisor";
 
@@ -91,7 +92,9 @@ export default function DashboardView({
   };
 
   // Categorized rosters
-  const supervisorRoster = roster.filter((r) => r.id === "790" || r.id === "170");
+  const supervisorRoster = roster
+    .filter((r) => r.id === "170" || r.id === "790")
+    .sort((a, b) => (a.id === "170" ? -1 : 1));
   const emtRoster = roster.filter((r) => parseInt(r.id) >= 791 && parseInt(r.id) <= 798);
   const supportRoster = roster.filter((r) => r.id.startsWith("EMS"));
   const rescueRoster = roster.filter((r) => parseInt(r.id) >= 171 && parseInt(r.id) <= 173);
@@ -112,15 +115,25 @@ export default function DashboardView({
           </span>
 
           {isEditing ? (
-            <input
-              type="text"
-              value={editedRosterName}
-              onChange={(e) => setEditedRosterName(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && handleSaveRoster(item.id)}
-              className="flex-1 bg-slate-50 border border-blue-500 rounded px-2 py-1 text-xs text-slate-900 focus:outline-none font-medium"
-              placeholder="Enter EMT Name..."
-              autoFocus
-            />
+            <div className="flex-1 min-w-0">
+              <input
+                type="text"
+                list="dashboard-staff-datalist"
+                value={editedRosterName}
+                onChange={(e) => setEditedRosterName(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleSaveRoster(item.id)}
+                className="w-full bg-slate-50 border border-blue-500 rounded px-2 py-1 text-xs text-slate-900 focus:outline-none font-medium"
+                placeholder="Enter EMT Name..."
+                autoFocus
+              />
+              {staffNamesList && staffNamesList.length > 0 && (
+                <datalist id="dashboard-staff-datalist">
+                  {staffNamesList.map((name, i) => (
+                    <option key={i} value={name} />
+                  ))}
+                </datalist>
+              )}
+            </div>
           ) : (
             <span
               className={`text-xs truncate font-medium ${
@@ -192,6 +205,83 @@ export default function DashboardView({
                 day: "numeric",
               })}
             </span>
+          </div>
+        </div>
+      </div>
+
+      {/* Daily Roster Section (Positioned at the top) */}
+      <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm border-t-4 border-t-blue-900 space-y-6">
+        <div className="flex items-center gap-3 border-b border-slate-200 pb-4">
+          <div className="p-2 bg-red-100 text-red-700 rounded-lg">
+            <Users className="w-6 h-6" />
+          </div>
+          <div>
+            <h3 className="font-extrabold text-slate-900 text-xl font-sans tracking-tight">
+              Daily Roster
+            </h3>
+          </div>
+        </div>
+
+        {/* 4 Roster Sections Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 items-start">
+          {/* Section 1: Command / Supervisors (170 & 790) */}
+          <div className="bg-slate-50/70 border border-slate-200 rounded-xl p-4 flex flex-col justify-start shadow-2xs space-y-3">
+            <div className="border-b border-slate-200 pb-2">
+              <h4 className="text-xs font-black uppercase font-mono tracking-wide text-red-700">
+                Supervisors
+              </h4>
+              <span className="text-[11px] text-slate-400 font-mono">170 & 790 Supervisors</span>
+            </div>
+            <div className="space-y-2">
+              {supervisorRoster.map((item) =>
+                renderRosterItem(item, "bg-red-100 text-red-800 border-red-200")
+              )}
+            </div>
+          </div>
+
+          {/* Section 2: Theme Park EMT Patrols */}
+          <div className="bg-slate-50/70 border border-slate-200 rounded-xl p-4 flex flex-col justify-start shadow-2xs space-y-3">
+            <div className="border-b border-slate-200 pb-2">
+              <h4 className="text-xs font-black uppercase font-mono tracking-wide text-blue-700">
+                Theme Park EMT Patrols
+              </h4>
+              <span className="text-[11px] text-slate-400 font-mono">791 – 798 Theme Park Units</span>
+            </div>
+            <div className="space-y-2">
+              {emtRoster.map((item) =>
+                renderRosterItem(item, "bg-blue-100 text-blue-800 border-blue-200")
+              )}
+            </div>
+          </div>
+
+          {/* Section 3: Additional Units */}
+          <div className="bg-slate-50/70 border border-slate-200 rounded-xl p-4 flex flex-col justify-start shadow-2xs space-y-3">
+            <div className="border-b border-slate-200 pb-2">
+              <h4 className="text-xs font-black uppercase font-mono tracking-wide text-emerald-700">
+                Additional Units
+              </h4>
+              <span className="text-[11px] text-slate-400 font-mono">Additional EMS</span>
+            </div>
+            <div className="space-y-2">
+              {supportRoster.map((item) =>
+                renderRosterItem(item, "bg-emerald-100 text-emerald-800 border-emerald-200")
+              )}
+            </div>
+          </div>
+
+          {/* Section 4: Water Park EMTs */}
+          <div className="bg-slate-50/70 border border-slate-200 rounded-xl p-4 flex flex-col justify-start shadow-2xs space-y-3">
+            <div className="border-b border-slate-200 pb-2">
+              <h4 className="text-xs font-black uppercase font-mono tracking-wide text-purple-700">
+                Water Park EMTs
+              </h4>
+              <span className="text-[11px] text-slate-400 font-mono">171 – 173 Hurricane Harbor</span>
+            </div>
+            <div className="space-y-2">
+              {rescueRoster.map((item) =>
+                renderRosterItem(item, "bg-purple-100 text-purple-800 border-purple-200")
+              )}
+            </div>
           </div>
         </div>
       </div>
@@ -373,86 +463,6 @@ export default function DashboardView({
                 <span className="text-slate-400">PRECIP</span>
                 <span className="text-slate-700 font-bold mt-0.5">{weatherData.precipitation}</span>
               </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Master On-Duty EMS Communications Roster Section */}
-      <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm border-t-4 border-t-blue-900 space-y-6">
-        <div className="flex items-center gap-3 border-b border-slate-200 pb-4">
-          <div className="p-2 bg-red-100 text-red-700 rounded-lg">
-            <Users className="w-6 h-6" />
-          </div>
-          <div>
-            <h3 className="font-extrabold text-slate-900 text-xl font-sans tracking-tight">
-              On-Duty EMS Communications Roster
-            </h3>
-            <p className="text-xs text-slate-500 font-medium">
-              Live unit assignments across theme park and water park
-            </p>
-          </div>
-        </div>
-
-        {/* 4 Roster Sections Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
-          {/* Section 1: Command / Supervisors */}
-          <div className="bg-slate-50/70 border border-slate-200 rounded-xl p-4 flex flex-col justify-between shadow-2xs space-y-3">
-            <div className="border-b border-slate-200 pb-2">
-              <h4 className="text-xs font-black uppercase font-mono tracking-wide text-red-700">
-                Command Units
-              </h4>
-              <span className="text-[11px] text-slate-400 font-mono">790 & 170 Supervisors</span>
-            </div>
-            <div className="space-y-2">
-              {supervisorRoster.map((item) =>
-                renderRosterItem(item, "bg-red-100 text-red-800 border-red-200")
-              )}
-            </div>
-          </div>
-
-          {/* Section 2: Theme Park EMT Patrols */}
-          <div className="bg-slate-50/70 border border-slate-200 rounded-xl p-4 flex flex-col justify-between shadow-2xs space-y-3">
-            <div className="border-b border-slate-200 pb-2">
-              <h4 className="text-xs font-black uppercase font-mono tracking-wide text-blue-700">
-                Theme Park EMT Patrols
-              </h4>
-              <span className="text-[11px] text-slate-400 font-mono">791 – 798 Field Units</span>
-            </div>
-            <div className="space-y-2">
-              {emtRoster.map((item) =>
-                renderRosterItem(item, "bg-blue-100 text-blue-800 border-blue-200")
-              )}
-            </div>
-          </div>
-
-          {/* Section 3: Additional Units */}
-          <div className="bg-slate-50/70 border border-slate-200 rounded-xl p-4 flex flex-col justify-between shadow-2xs space-y-3">
-            <div className="border-b border-slate-200 pb-2">
-              <h4 className="text-xs font-black uppercase font-mono tracking-wide text-emerald-700">
-                Additional Units
-              </h4>
-              <span className="text-[11px] text-slate-400 font-mono">EMS2 – EMS5 Stations & Rover</span>
-            </div>
-            <div className="space-y-2">
-              {supportRoster.map((item) =>
-                renderRosterItem(item, "bg-emerald-100 text-emerald-800 border-emerald-200")
-              )}
-            </div>
-          </div>
-
-          {/* Section 4: Water Park EMTs */}
-          <div className="bg-slate-50/70 border border-slate-200 rounded-xl p-4 flex flex-col justify-between shadow-2xs space-y-3">
-            <div className="border-b border-slate-200 pb-2">
-              <h4 className="text-xs font-black uppercase font-mono tracking-wide text-purple-700">
-                Water Park EMTs
-              </h4>
-              <span className="text-[11px] text-slate-400 font-mono">171 – 173 Hurricane Harbor</span>
-            </div>
-            <div className="space-y-2">
-              {rescueRoster.map((item) =>
-                renderRosterItem(item, "bg-purple-100 text-purple-800 border-purple-200")
-              )}
             </div>
           </div>
         </div>

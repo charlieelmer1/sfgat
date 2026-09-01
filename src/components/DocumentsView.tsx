@@ -212,12 +212,6 @@ export default function DocumentsView({
             <BookOpen className="w-6 h-6 text-red-600" />
             {mode === "protocols" ? "Medical Protocols & Guidelines" : "Standard Operating Procedures (SOPs)"}
           </h2>
-          <p className="text-slate-500 text-sm mt-1">
-            {mode === "protocols" 
-              ? "Clinical protocols for Six Flags park responses and regional medical direction directives."
-              : "Operational procedures, vehicle safety rules, and administrative logs for SFGA EMS."
-            }
-          </p>
         </div>
         {isSupervisor && !isAdding && !isEditing && (
           <button
@@ -319,9 +313,6 @@ export default function DocumentsView({
                     <h4 className={`font-bold text-xs mt-1.5 line-clamp-1 ${isSelected ? "text-blue-900" : "text-slate-800"}`}>
                       {doc.title}
                     </h4>
-                    <span className="text-[9px] text-slate-400 font-mono mt-1">
-                      Last Updated: {doc.updatedAt}
-                    </span>
                   </button>
                 );
               })
@@ -537,7 +528,7 @@ export default function DocumentsView({
                     {selectedDoc.title}
                   </h3>
                   <span className="text-[10px] text-slate-400 font-mono block mt-1.5 uppercase">
-                    Document Registry: {selectedDoc.id} | Last Revised: {selectedDoc.updatedAt}
+                    Document Registry: {selectedDoc.id}
                   </span>
                 </div>
 

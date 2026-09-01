@@ -64,6 +64,43 @@ export interface WeeklySchedule {
   [day: string]: DailySchedule; // e.g., "Monday": DailySchedule
 }
 
+export interface ParkMapItem {
+  id: "operational" | "frightFest";
+  title: string;
+  imageData?: string; // base64 data URL
+  fileName?: string;
+  fileSize?: string;
+  updatedAt?: string;
+  uploadedBy?: string;
+}
+
+export interface ParkMapsState {
+  operational: ParkMapItem;
+  frightFest: ParkMapItem;
+}
+
+export const INITIAL_PARK_MAPS: ParkMapsState = {
+  operational: {
+    id: "operational",
+    title: "Operational Map",
+    imageData: "",
+    fileName: "",
+    fileSize: "",
+    updatedAt: "",
+    uploadedBy: "",
+  },
+  frightFest: {
+    id: "frightFest",
+    title: "Fright Fest Map",
+    imageData: "",
+    fileName: "",
+    fileSize: "",
+    updatedAt: "",
+    uploadedBy: "",
+  },
+};
+
+
 export interface HourlyWeather {
   time: string;
   temp: number;
