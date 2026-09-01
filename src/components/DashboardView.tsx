@@ -94,7 +94,7 @@ export default function DashboardView({
   // Categorized rosters
   const supervisorRoster = roster
     .filter((r) => r.id === "170" || r.id === "790")
-    .sort((a, b) => (a.id === "170" ? -1 : 1));
+    .sort((a, b) => (a.id === "790" ? -1 : 1));
   const emtRoster = roster.filter((r) => parseInt(r.id) >= 791 && parseInt(r.id) <= 798);
   const supportRoster = roster.filter((r) => r.id.startsWith("EMS"));
   const rescueRoster = roster.filter((r) => parseInt(r.id) >= 171 && parseInt(r.id) <= 173);
@@ -230,7 +230,7 @@ export default function DashboardView({
               <h4 className="text-xs font-black uppercase font-mono tracking-wide text-red-700">
                 Supervisors
               </h4>
-              <span className="text-[11px] text-slate-400 font-mono">170 & 790 Supervisors</span>
+              <span className="text-[11px] text-slate-400 font-mono">790 & 170 Supervisors</span>
             </div>
             <div className="space-y-2">
               {supervisorRoster.map((item) =>
