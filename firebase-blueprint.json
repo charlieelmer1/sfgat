@@ -19,11 +19,31 @@
         "weeklySchedule": { "type": "object" },
         "updatedAt": { "type": "string" }
       }
+    },
+    "documentItem": {
+      "title": "Document Item",
+      "description": "SOP or Medical Direction protocol document stored and synchronized across all devices",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "type": { "type": "string" },
+        "category": { "type": "string" },
+        "content": { "type": "string" },
+        "attachmentName": { "type": "string" },
+        "attachmentType": { "type": "string" },
+        "attachmentData": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["id", "title", "content", "updatedAt"]
     }
   },
   "firestore": {
     "/system_state/current": {
       "entity": "systemState"
+    },
+    "/documents/{documentId}": {
+      "entity": "documentItem"
     }
   }
 }

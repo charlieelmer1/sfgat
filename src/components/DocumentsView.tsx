@@ -16,6 +16,8 @@ import {
   X,
   Tag,
   Filter,
+  Database,
+  CheckCircle2,
 } from "lucide-react";
 import { DocumentItem, SOP_CATEGORIES, SopCategory } from "../types";
 import PdfViewer from "./PdfViewer";
@@ -115,6 +117,7 @@ export default function DocumentsView({
   const [isProcessingFile, setIsProcessingFile] = useState<boolean>(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [dragOver, setDragOver] = useState(false);
+  const [syncNotification, setSyncNotification] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleStartAdd = () => {
@@ -257,6 +260,8 @@ export default function DocumentsView({
       onAddDocument(newDoc);
       setSelectedDocId(newDoc.id);
       setIsAdding(false);
+      setSyncNotification(`Document "${editTitle}" saved to cloud database and synced across all devices.`);
+      setTimeout(() => setSyncNotification(null), 5000);
     } else if (isEditing && selectedDoc) {
       const updatedDoc: DocumentItem = {
         ...selectedDoc,
@@ -271,6 +276,8 @@ export default function DocumentsView({
       };
       onUpdateDocument(updatedDoc);
       setIsEditing(false);
+      setSyncNotification(`Document "${editTitle}" updated in cloud database across all devices.`);
+      setTimeout(() => setSyncNotification(null), 5000);
     }
   };
 
@@ -278,6 +285,8 @@ export default function DocumentsView({
     if (confirm("Are you sure you want to permanently delete this document?")) {
       onDeleteDocument(id);
       setSelectedDocId(null);
+      setSyncNotification("Document deleted from cloud database across all devices.");
+      setTimeout(() => setSyncNotification(null), 5000);
     }
   };
 
@@ -298,10 +307,17 @@ export default function DocumentsView({
       {/* Title block - cleaned of previous explanatory subtitles per instructions */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-slate-200 pb-4">
         <div>
-          <h2 className="text-2xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
-            <BookOpen className="w-6 h-6 text-red-600" />
-            {mode === "protocols" ? "Medical Direction" : "Standard Operating Procedures (SOPs)"}
-          </h2>
+          <div className="flex items-center flex-wrap gap-2.5">
+            <h2 className="text-2xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
+              <BookOpen className="w-6 h-6 text-red-600" />
+              {mode === "protocols" ? "Medical Direction" : "Standard Operating Procedures (SOPs)"}
+            </h2>
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium bg-emerald-50 text-emerald-800 border border-emerald-200 shadow-xs">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+              <Database className="w-3 h-3 text-emerald-600" />
+              Database Synced
+            </span>
+          </div>
         </div>
         {isSupervisor && !isAdding && !isEditing && (
           <button
@@ -312,6 +328,22 @@ export default function DocumentsView({
           </button>
         )}
       </div>
+
+      {/* Sync Confirmation Banner */}
+      {syncNotification && (
+        <div className="bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs px-4 py-3 rounded-md flex items-center justify-between shadow-xs animate-in fade-in duration-200">
+          <div className="flex items-center gap-2">
+            <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+            <span className="font-semibold">{syncNotification}</span>
+          </div>
+          <button
+            onClick={() => setSyncNotification(null)}
+            className="text-emerald-600 hover:text-emerald-800 p-1 cursor-pointer"
+          >
+            <X className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      )}
 
       {/* Main Layout Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">

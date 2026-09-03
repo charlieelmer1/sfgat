@@ -15,7 +15,19 @@ import SupervisorAdmin from "./components/SupervisorAdmin";
 import ParkMapView from "./components/ParkMapView";
 
 // Firebase Firestore
-import { db, doc, setDoc, onSnapshot, SYSTEM_STATE_COLLECTION, SYSTEM_STATE_DOC } from "./firebase";
+import {
+  db,
+  doc,
+  setDoc,
+  deleteDoc,
+  collection,
+  onSnapshot,
+  SYSTEM_STATE_COLLECTION,
+  SYSTEM_STATE_DOC,
+  DOCUMENTS_COLLECTION,
+  handleFirestoreError,
+  OperationType,
+} from "./firebase";
 
 // Types & Initial Data
 import {
@@ -81,8 +93,9 @@ export default function App() {
 
   const [isLoaded, setIsLoaded] = useState(false);
   const [firestoreConnected, setFirestoreConnected] = useState(false);
+  const [documentsLoaded, setDocumentsLoaded] = useState(false);
 
-  // 1. Primary Real-time Firestore Listener
+  // 1. Primary Real-time Firestore Listener for System State (Hours, Roster, Contacts, etc.)
   useEffect(() => {
     const docRef = doc(db, SYSTEM_STATE_COLLECTION, SYSTEM_STATE_DOC);
     
@@ -96,8 +109,6 @@ export default function App() {
           if (data.parkHours) setParkHours(data.parkHours);
           if (data.announcement !== undefined) setAnnouncement(data.announcement);
           if (data.roster) setRoster(data.roster);
-          if (data.protocols) setProtocols(data.protocols);
-          if (data.sops) setSops(data.sops);
           if (data.contacts) setContacts(data.contacts);
           if (data.extensions) setExtensions(data.extensions);
           if (data.tenCodes) setTenCodes(data.tenCodes);
@@ -118,8 +129,6 @@ export default function App() {
             parkHours: INITIAL_PARK_HOURS,
             announcement: INITIAL_ANNOUNCEMENT,
             roster: INITIAL_ROSTER,
-            protocols: INITIAL_PROTOCOLS,
-            sops: INITIAL_SOPS,
             contacts: INITIAL_CONTACTS,
             extensions: INITIAL_EXTENSIONS,
             tenCodes: INITIAL_10_CODES,
@@ -136,7 +145,7 @@ export default function App() {
         }
       },
       (error) => {
-        console.warn("Firestore listener error, falling back to REST API & LocalStorage:", error);
+        console.warn("Firestore system_state listener error, falling back to REST API & LocalStorage:", error);
         setFirestoreConnected(false);
         // Fallback to server state
         fetch("/api/state?t=" + Date.now(), { cache: "no-store" })
@@ -146,8 +155,6 @@ export default function App() {
               if (data.parkHours) setParkHours(data.parkHours);
               if (data.announcement !== undefined) setAnnouncement(data.announcement);
               if (data.roster) setRoster(data.roster);
-              if (data.protocols) setProtocols(data.protocols);
-              if (data.sops) setSops(data.sops);
               if (data.contacts) setContacts(data.contacts);
               if (data.extensions) setExtensions(data.extensions);
               if (data.tenCodes) setTenCodes(data.tenCodes);
@@ -167,6 +174,56 @@ export default function App() {
     );
 
     return () => unsubscribe();
+  }, []);
+
+  // 2. Real-time Firestore Listener for SOPs & Medical Direction Protocols (Syncs across all devices)
+  useEffect(() => {
+    const colRef = collection(db, DOCUMENTS_COLLECTION);
+    
+    const unsubscribeDocs = onSnapshot(
+      colRef,
+      async (snapshot) => {
+        if (!snapshot.empty) {
+          const docList: DocumentItem[] = [];
+          snapshot.forEach((d) => {
+            docList.push(d.data() as DocumentItem);
+          });
+          const fetchedProtocols = docList.filter((d) => d.type !== undefined);
+          const fetchedSops = docList.filter((d) => !d.type);
+
+          setProtocols(fetchedProtocols.length > 0 ? fetchedProtocols : INITIAL_PROTOCOLS);
+          setSops(fetchedSops.length > 0 ? fetchedSops : INITIAL_SOPS);
+          setDocumentsLoaded(true);
+        } else {
+          // If Firestore documents collection is empty, seed it with INITIAL_PROTOCOLS & INITIAL_SOPS
+          const seedItems = [...INITIAL_PROTOCOLS, ...INITIAL_SOPS];
+          for (const item of seedItems) {
+            try {
+              await setDoc(doc(db, DOCUMENTS_COLLECTION, item.id), item);
+            } catch (e) {
+              console.error("Seeding initial document error:", item.id, e);
+            }
+          }
+          setProtocols(INITIAL_PROTOCOLS);
+          setSops(INITIAL_SOPS);
+          setDocumentsLoaded(true);
+        }
+      },
+      (err) => {
+        handleFirestoreError(err, OperationType.LIST, DOCUMENTS_COLLECTION);
+        // Fallback to /api/documents
+        fetch("/api/documents")
+          .then((r) => r.json())
+          .then((data) => {
+            if (data.protocols && data.protocols.length > 0) setProtocols(data.protocols);
+            if (data.sops && data.sops.length > 0) setSops(data.sops);
+            setDocumentsLoaded(true);
+          })
+          .catch(console.error);
+      }
+    );
+
+    return () => unsubscribeDocs();
   }, []);
 
   // Helper to save state changes to Firestore, Server API, and LocalStorage
@@ -210,16 +267,6 @@ export default function App() {
     if (!isLoaded) return;
     saveToCloudAndLocal("roster", roster, "sfga_ems_roster");
   }, [roster, isLoaded]);
-
-  useEffect(() => {
-    if (!isLoaded) return;
-    saveToCloudAndLocal("protocols", protocols, "sfga_ems_protocols");
-  }, [protocols, isLoaded]);
-
-  useEffect(() => {
-    if (!isLoaded) return;
-    saveToCloudAndLocal("sops", sops, "sfga_ems_sops");
-  }, [sops, isLoaded]);
 
   useEffect(() => {
     if (!isLoaded) return;
@@ -313,26 +360,70 @@ export default function App() {
     setStaffNamesList(list);
   };
 
-  // Protocols & SOPs Document operations
-  const handleAddDocument = (doc: DocumentItem) => {
-    if (doc.type) {
-      setProtocols((prev) => [doc, ...prev]);
+  // Protocols & SOPs Document operations (persisted to Firestore collection 'documents' and synced across all devices)
+  const handleAddDocument = async (docItem: DocumentItem) => {
+    // 1. Optimistic local state update
+    if (docItem.type) {
+      setProtocols((prev) => [docItem, ...prev.filter((d) => d.id !== docItem.id)]);
     } else {
-      setSops((prev) => [doc, ...prev]);
+      setSops((prev) => [docItem, ...prev.filter((d) => d.id !== docItem.id)]);
     }
+
+    // 2. Persist to Firestore collection 'documents'
+    try {
+      const docRef = doc(db, DOCUMENTS_COLLECTION, docItem.id);
+      await setDoc(docRef, docItem);
+    } catch (err) {
+      handleFirestoreError(err, OperationType.CREATE, `${DOCUMENTS_COLLECTION}/${docItem.id}`);
+    }
+
+    // 3. Sync to Express server backup
+    fetch("/api/documents", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ document: docItem }),
+    }).catch(console.error);
   };
 
-  const handleUpdateDocument = (doc: DocumentItem) => {
-    if (doc.type) {
-      setProtocols((prev) => prev.map((item) => (item.id === doc.id ? doc : item)));
+  const handleUpdateDocument = async (docItem: DocumentItem) => {
+    // 1. Optimistic local state update
+    if (docItem.type) {
+      setProtocols((prev) => prev.map((item) => (item.id === docItem.id ? docItem : item)));
     } else {
-      setSops((prev) => prev.map((item) => (item.id === doc.id ? doc : item)));
+      setSops((prev) => prev.map((item) => (item.id === docItem.id ? docItem : item)));
     }
+
+    // 2. Persist to Firestore collection 'documents'
+    try {
+      const docRef = doc(db, DOCUMENTS_COLLECTION, docItem.id);
+      await setDoc(docRef, docItem, { merge: true });
+    } catch (err) {
+      handleFirestoreError(err, OperationType.UPDATE, `${DOCUMENTS_COLLECTION}/${docItem.id}`);
+    }
+
+    // 3. Sync to Express server backup
+    fetch("/api/documents", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ document: docItem }),
+    }).catch(console.error);
   };
 
-  const handleDeleteDocument = (id: string) => {
+  const handleDeleteDocument = async (id: string) => {
+    // 1. Optimistic local state update
     setProtocols((prev) => prev.filter((item) => item.id !== id));
     setSops((prev) => prev.filter((item) => item.id !== id));
+
+    // 2. Delete from Firestore collection 'documents'
+    try {
+      const docRef = doc(db, DOCUMENTS_COLLECTION, id);
+      await deleteDoc(docRef);
+    } catch (err) {
+      handleFirestoreError(err, OperationType.DELETE, `${DOCUMENTS_COLLECTION}/${id}`);
+    }
+
+    // 3. Delete from Express server backup
+    fetch(`/api/documents/${id}`, { method: "DELETE" }).catch(console.error);
   };
 
   // Contacts operations
@@ -379,6 +470,12 @@ export default function App() {
     try {
       const docRef = doc(db, SYSTEM_STATE_COLLECTION, SYSTEM_STATE_DOC);
       setDoc(docRef, defaultData).catch(console.error);
+
+      // Re-seed documents collection
+      const seedItems = [...INITIAL_PROTOCOLS, ...INITIAL_SOPS];
+      seedItems.forEach((item) => {
+        setDoc(doc(db, DOCUMENTS_COLLECTION, item.id), item).catch(console.error);
+      });
     } catch (e) {
       console.error("Firestore reset error:", e);
     }

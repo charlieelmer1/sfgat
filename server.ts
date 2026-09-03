@@ -154,6 +154,63 @@ async function startServer() {
     res.json({ success: true, state: updatedDb });
   });
 
+  // Dedicated documents API endpoints
+  app.get("/api/documents", (req, res) => {
+    const currentDb = loadDb();
+    res.json({
+      protocols: currentDb.protocols || INITIAL_PROTOCOLS,
+      sops: currentDb.sops || INITIAL_SOPS,
+    });
+  });
+
+  app.post("/api/documents", (req, res) => {
+    const currentDb = loadDb();
+    const { document: docItem, protocols, sops } = req.body;
+
+    if (protocols) {
+      currentDb.protocols = protocols;
+    }
+    if (sops) {
+      currentDb.sops = sops;
+    }
+
+    if (docItem && docItem.id) {
+      if (docItem.type) {
+        // Medical Direction protocol
+        const existingIndex = (currentDb.protocols || []).findIndex(
+          (item: any) => item.id === docItem.id
+        );
+        if (existingIndex >= 0) {
+          currentDb.protocols[existingIndex] = docItem;
+        } else {
+          currentDb.protocols = [docItem, ...(currentDb.protocols || [])];
+        }
+      } else {
+        // SOP
+        const existingIndex = (currentDb.sops || []).findIndex(
+          (item: any) => item.id === docItem.id
+        );
+        if (existingIndex >= 0) {
+          currentDb.sops[existingIndex] = docItem;
+        } else {
+          currentDb.sops = [docItem, ...(currentDb.sops || [])];
+        }
+      }
+    }
+
+    saveDb(currentDb);
+    res.json({ success: true, protocols: currentDb.protocols, sops: currentDb.sops });
+  });
+
+  app.delete("/api/documents/:id", (req, res) => {
+    const { id } = req.params;
+    const currentDb = loadDb();
+    currentDb.protocols = (currentDb.protocols || []).filter((item: any) => item.id !== id);
+    currentDb.sops = (currentDb.sops || []).filter((item: any) => item.id !== id);
+    saveDb(currentDb);
+    res.json({ success: true, id });
+  });
+
   app.post("/api/reset", (req, res) => {
     const defaultDb = {
       parkHours: INITIAL_PARK_HOURS,

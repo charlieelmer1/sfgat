@@ -1,0 +1,987 @@
+{
+  "parkHours": {
+    "themePark": "10:00 AM - 10:00 PM",
+    "waterPark": "11:00 AM - 6:30 PM"
+  },
+  "announcement": "🚨 REMINDER TO ALL CREWS: Keep hydrated! Temperatures are expected to climb to 88°F today. Check on-duty hydration stations at Station 1 and Nitro First Aid. Make sure ALS kit batteries are fully charged for the shift. – Supervisor 790",
+  "roster": [
+    {
+      "id": "790",
+      "name": "Skylar Kohn"
+    },
+    {
+      "id": "791",
+      "name": "Ryan Miller"
+    },
+    {
+      "id": "792",
+      "name": "Amanda Smith"
+    },
+    {
+      "id": "793",
+      "name": "David Jones"
+    },
+    {
+      "id": "794",
+      "name": "Sarah Conner"
+    },
+    {
+      "id": "795",
+      "name": "Michael Chang"
+    },
+    {
+      "id": "796",
+      "name": "Jessica Williams"
+    },
+    {
+      "id": "797",
+      "name": "James Thompson"
+    },
+    {
+      "id": "798",
+      "name": "Emily Davis"
+    },
+    {
+      "id": "EMS2",
+      "name": "Medic 2 Crew (ALS Rescue)"
+    },
+    {
+      "id": "EMS3",
+      "name": "Medic 3 Crew (Station 1)"
+    },
+    {
+      "id": "EMS4",
+      "name": "Main First Aid Dispatcher"
+    },
+    {
+      "id": "EMS5",
+      "name": "Hurricane Harbor Crew"
+    },
+    {
+      "id": "170",
+      "name": "Shane Havens"
+    },
+    {
+      "id": "171",
+      "name": "Kyle Anderson"
+    },
+    {
+      "id": "172",
+      "name": "Brianna Scott"
+    },
+    {
+      "id": "173",
+      "name": "Thomas Kelly"
+    }
+  ],
+  "protocols": [
+    {
+      "id": "prot-1",
+      "title": "Anaphylaxis & Severe Allergic Reactions",
+      "type": "direction",
+      "category": "Allergic / Immunological",
+      "updatedAt": "2026-05-12",
+      "attachmentName": "SFGA_Directive_Anaphylaxis_Management.pdf",
+      "attachmentType": "pdf",
+      "attachmentData": "data:application/pdf;base64,JVBERi0xLjQKMSAwIG9iago8PCAvVHlwZSAvQ2F0YWxvZyAvUGFnZXMgMiAwIFIgPj4KZW5kb2JqCjIgMCBvYmoKPDwgL1R5cGUgL1BhZ2VzIC9LaWRzIFs1IDAgUl0gL0NvdW50IDEgPj4KZW5kb2JqCjMgMCBvYmoKPDwgL1R5cGUgL0ZvbnQgL1N1YnR5cGUgL1R5cGUxIC9CYXNlRm9udCAvSGVsdmV0aWNhLUJvbGQgPj4KZW5kb2JqCjQgMCBvYmoKPDwgL1R5cGUgL0ZvbnQgL1N1YnR5cGUgL1R5cGUxIC9CYXNlRm9udCAvSGVsdmV0aWNhID4+CmVuZG9iago1IDAgb2JqCjw8IC9UeXBlIC9QYWdlIC9QYXJlbnQgMiAwIFIgL01lZGlhQm94IFswIDAgNjEyIDc5Ml0gL0NvbnRlbnRzIDYgMCBSIC9SZXNvdXJjZXMgPDwgL0ZvbnQgPDwgL0YxIDMgMCBSIC9GMiA0IDAgUiA+PiA+PiA+PgplbmRvYmoKNiAwIG9iago8PCAvTGVuZ3RoIDE2NzkgPj4Kc3RyZWFtCkJUCi9GMSAxNSBUZgo1MCA3NDIgVGQKKEFuYXBoeWxheGlzICYgU2V2ZXJlIEFsbGVyZ2ljIFJlYWN0aW9ucykgVGoKL0YyIDkgVGYKMCAtMTggVGQKKFNJWCBGTEFHUyBHUkVBVCBBRFZFTlRVUkUgRU1TIHwgTUVESUNBTCAmIE9QRVJBVElPTkFMIERJUkVDVElWRSkgVGoKL0YyIDguNSBUZgowIC0xNCBUZAooRWZmZWN0aXZlIERhdGU6IDIwMjYtMDUtMTIgfCBNZWRpY2FsIENvbW1hbmQgQXBwcm92ZWQpIFRqCjAgLTEyIFRkCihfX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX18pIFRqCi9GMiA5LjUgVGYKMCAtMTggVGQKL0YxIDkuNSBUZgooQ2xpbmljYWwgUHJlc2VudGF0aW9uOiBEeXNwbmVhLCB3aGVlemluZywgc3RyaWRvciwgdXJ0aWNhcmlhIFwoaGl2ZXNcKSwpIFRqCjAgLTEzIFRkCi9GMiA5LjUgVGYKKHBydXJpdHVzLCBoeXBvdGVuc2lvbiwgdGFjaHljYXJkaWEsIG9yIHN3ZWxsaW5nIG9mIHRoZSBmYWNlLCBsaXBzLCBvciB0b25ndWUuKSBUagowIC0xMyBUZAowIC0xMCBUZAooKSBUagovRjEgOS41IFRmCihJbW1lZGlhdGUgQWN0aW9uczopIFRqCjAgLTEzIFRkCi9GMSA5LjUgVGYKKDEuIEFzc2VzcyBBaXJ3YXksIEJyZWF0aGluZywgYW5kIENpcmN1bGF0aW9uIFwoQUJDc1wpLikgVGoKMCAtMTMgVGQKL0YxIDkuNSBUZgooMi4gQWRtaW5pc3RlciBoaWdoLWZsb3cgT3h5Z2VuIHZpYSBOb24tUmVicmVhdGhlciBNYXNrIFwoMTItMTUgTC9taW5cKS4pIFRqCjAgLTEzIFRkCi9GMSA5LjUgVGYKKDMuIElmIGFuYXBoeWxheGlzIGlzIHByZXNlbnQgXChpbnZvbHZlbWVudCBvZiAyIG9yIG1vcmUgYm9keSBzeXN0ZW1zLCBvcikgVGoKMCAtMTMgVGQKL0YyIDkuNSBUZgooaHlwb3RlbnNpb24vYWlyd2F5IHN3ZWxsaW5nXCk6KSBUagowIC0xMyBUZAovRjIgOS41IFRmCigtIEFkbWluaXN0ZXIgRXBpbmVwaHJpbmUgMToxLDAwMCBcKDAuMyBtZyBJTSBpbiBsYXRlcmFsIHRoaWdoXCkgZm9yIGFkdWx0cy4pIFRqCjAgLTEzIFRkCi9GMiA5LjUgVGYKKC0gQWRtaW5pc3RlciBFcGluZXBocmluZSAxOjEsMDAwIFwoMC4xNSBtZyBJTVwpIGZvciBwZWRpYXRyaWMgcGF0aWVudHMgXCg8MzBrZ1wpLikgVGoKMCAtMTMgVGQKL0YxIDkuNSBUZgooNC4gTW9uaXRvciB2aXRhbCBzaWducyBldmVyeSA1IG1pbnV0ZXMuKSBUagowIC0xMyBUZAovRjEgOS41IFRmCig1LiBFc3RhYmxpc2ggSVYgYWNjZXNzIGVuIHJvdXRlIG9yIG9uLXNjZW5lIGlmIEFMUyBpcyBwcmVzZW50LikgVGoKMCAtMTMgVGQKL0YxIDkuNSBUZgooNi4gQWRtaW5pc3RlciBBbGJ1dGVyb2wgXCgyLjUgbWcgdmlhIG5lYnVsaXplclwpIGlmIGJyb25jaG9zcGFzbSBwZXJzaXN0cy4pIFRqCjAgLTEzIFRkCi9GMSA5LjUgVGYKKDcuIFJlcXVlc3QgQUxTIGludGVyY2VwdCBpZiBub3QgYWxyZWFkeSBvbi1zY2VuZS4gRG8gbm90IGRlbGF5IHRyYW5zcG9ydC4pIFRqCjAgLTEzIFRkCkVUCkJUCi9GMiA4IFRmCjUwIDM2IFRkCihfX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX18pIFRqCjAgLTEyIFRkCihDT05GSURFTlRJQUwgJiBQUk9QUklFVEFSWSAtIFNGR0EgRU1TIC0gUGFnZSAxIG9mIDEpIFRqCkVUCmVuZHN0cmVhbQplbmRvYmoKeHJlZgowIDcKMDAwMDAwMDAwMCA2NTUzNSBmIAowMDAwMDAwMDA5IDAwMDAwIG4gCjAwMDAwMDAwNTggMDAwMDAgbiAKMDAwMDAwMDExNSAwMDAwMCBuIAowMDAwMDAwMTkwIDAwMDAwIG4gCjAwMDAwMDAyNjAgMDAwMDAgbiAKMDAwMDAwMDM5NiAwMDAwMCBuIAp0cmFpbGVyCjw8IC9TaXplIDcgL1Jvb3QgMSAwIFIgPj4Kc3RhcnR4cmVmCjIxMjcKJSVFT0Y=",
+      "content": "Clinical Presentation: Dyspnea, wheezing, stridor, urticaria (hives), pruritus, hypotension, tachycardia, or swelling of the face, lips, or tongue.\n\nImmediate Actions:\n1. Assess Airway, Breathing, and Circulation (ABCs).\n2. Administer high-flow Oxygen via Non-Rebreather Mask (12-15 L/min).\n3. If anaphylaxis is present (involvement of 2 or more body systems, or hypotension/airway swelling):\n   - Administer Epinephrine 1:1,000 (0.3 mg IM in lateral thigh) for adults.\n   - Administer Epinephrine 1:1,000 (0.15 mg IM) for pediatric patients (<30kg).\n4. Monitor vital signs every 5 minutes.\n5. Establish IV access en route or on-scene if ALS is present.\n6. Administer Albuterol (2.5 mg via nebulizer) if bronchospasm persists.\n7. Request ALS intercept if not already on-scene. Do not delay transport."
+    },
+    {
+      "id": "prot-2",
+      "title": "Heat-Related Emergencies & Heat Stroke",
+      "type": "procedures",
+      "category": "Environmental",
+      "updatedAt": "2026-06-01",
+      "attachmentName": "SFGA_SOP_Heat_Stroke_Cooling.pdf",
+      "attachmentType": "pdf",
+      "attachmentData": "data:application/pdf;base64,JVBERi0xLjQKMSAwIG9iago8PCAvVHlwZSAvQ2F0YWxvZyAvUGFnZXMgMiAwIFIgPj4KZW5kb2JqCjIgMCBvYmoKPDwgL1R5cGUgL1BhZ2VzIC9LaWRzIFs1IDAgUl0gL0NvdW50IDEgPj4KZW5kb2JqCjMgMCBvYmoKPDwgL1R5cGUgL0ZvbnQgL1N1YnR5cGUgL1R5cGUxIC9CYXNlRm9udCAvSGVsdmV0aWNhLUJvbGQgPj4KZW5kb2JqCjQgMCBvYmoKPDwgL1R5cGUgL0ZvbnQgL1N1YnR5cGUgL1R5cGUxIC9CYXNlRm9udCAvSGVsdmV0aWNhID4+CmVuZG9iago1IDAgb2JqCjw8IC9UeXBlIC9QYWdlIC9QYXJlbnQgMiAwIFIgL01lZGlhQm94IFswIDAgNjEyIDc5Ml0gL0NvbnRlbnRzIDYgMCBSIC9SZXNvdXJjZXMgPDwgL0ZvbnQgPDwgL0YxIDMgMCBSIC9GMiA0IDAgUiA+PiA+PiA+PgplbmRvYmoKNiAwIG9iago8PCAvTGVuZ3RoIDIwOTQgPj4Kc3RyZWFtCkJUCi9GMSAxNSBUZgo1MCA3NDIgVGQKKEhlYXQtUmVsYXRlZCBFbWVyZ2VuY2llcyAmIEhlYXQgU3Ryb2tlKSBUagovRjIgOSBUZgowIC0xOCBUZAooU0lYIEZMQUdTIEdSRUFUIEFEVkVOVFVSRSBFTVMgfCBNRURJQ0FMICYgT1BFUkFUSU9OQUwgRElSRUNUSVZFKSBUagovRjIgOC41IFRmCjAgLTE0IFRkCihFZmZlY3RpdmUgRGF0ZTogMjAyNi0wNi0wMSB8IE1lZGljYWwgQ29tbWFuZCBBcHByb3ZlZCkgVGoKMCAtMTIgVGQKKF9fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fXykgVGoKL0YyIDkuNSBUZgowIC0xOCBUZAovRjEgOS41IFRmCihTaXggRmxhZ3MgR3JlYXQgQWR2ZW50dXJlIFN1bW1lciBFbnZpcm9ubWVudGFsIFNPUDopIFRqCjAgLTEzIFRkCi9GMSA5LjUgVGYKKFdpdGggaGlnaCBhbWJpZW50IHRlbXBlcmF0dXJlIGFuZCBoaWdoIGh1bWlkaXR5IGluIHRoZSBwYXJrOikgVGoKMCAtMTMgVGQKMCAtMTAgVGQKKCkgVGoKL0YyIDkuNSBUZgooSGVhdCBFeGhhdXN0aW9uIFN5bXB0b21zOiBIZWF2eSBzd2VhdGluZywgcGFsZSBza2luLCBtdXNjbGUgY3JhbXBzLCBmYXRpZ3VlLCkgVGoKMCAtMTMgVGQKL0YyIDkuNSBUZgooaGVhZGFjaGUsIGRpenppbmVzcywgbmF1c2VhL3ZvbWl0aW5nLiBOb3JtYWwgbWVudGFsIHN0YXR1cy4pIFRqCjAgLTEzIFRkCi9GMSA5LjUgVGYKKFRyZWF0bWVudDopIFRqCjAgLTEzIFRkCi9GMSA5LjUgVGYKKDEuIE1vdmUgcGF0aWVudCB0byBGaXJzdCBBaWQgU3RhdGlvbiBBL0MgaW1tZWRpYXRlbHkuKSBUagowIC0xMyBUZAovRjEgOS41IFRmCigyLiBSZW1vdmUgdGlnaHQvZXhjZXNzIGNsb3RoaW5nLikgVGoKMCAtMTMgVGQKL0YxIDkuNSBUZgooMy4gQXBwbHkgY29vbCwgZGFtcCBjbG90aHMuIFNwcmF5IGNvb2wgd2F0ZXIuKSBUagowIC0xMyBUZAovRjEgOS41IFRmCig0LiBQcm92aWRlIGFjdGl2ZSBvcmFsIGh5ZHJhdGlvbiBcKHdhdGVyIG9yIGVsZWN0cm9seXRlIGRyaW5rc1wpIGlmIHBhdGllbnQgaXMpIFRqCjAgLTEzIFRkCi9GMiA5LjUgVGYKKGZ1bGx5IGNvbnNjaW91cyBhbmQgY29vcGVyYXRpdmUuKSBUagowIC0xMyBUZAowIC0xMCBUZAooKSBUagovRjIgOS41IFRmCihIZWF0IFN0cm9rZSBTeW1wdG9tczogSGlnaCBib2R5IHRlbXAgXCg+MTAzwrBGXCksIGhvdC9kcnkgb3IgaGVhdmlseSBzd2VhdGluZykgVGoKMCAtMTMgVGQKL0YyIDkuNSBUZgooc2tpbiwgYWx0ZXJlZCBtZW50YWwgc3RhdHVzIFwoY29uZnVzaW9uLCBjb21iYXRpdmVuZXNzLCBsZXRoYXJneVwpLCBzZWl6dXJlLCkgVGoKMCAtMTMgVGQKL0YyIDkuNSBUZgooY29tYS4pIFRqCjAgLTEzIFRkCi9GMSA5LjUgVGYKKFRyZWF0bWVudDopIFRqCjAgLTEzIFRkCi9GMSA5LjUgVGYKKDEuIE1lZGljYWwgRW1lcmdlbmN5ISBSZXF1ZXN0IGltbWVkaWF0ZSBiYWNrdXAgYW5kIHRyYW5zcG9ydC4pIFRqCjAgLTEzIFRkCi9GMSA5LjUgVGYKKDIuIEFjdGl2ZSBDb29saW5nOiBBcHBseSBpY2UgcGFja3MgdG8gY2VydmljYWwsIGF4aWxsYXJ5LCBhbmQgaW5ndWluYWwpIFRqCjAgLTEzIFRkCi9GMiA5LjUgVGYKKHJlZ2lvbnMuIEZhbm5pbmcgd2l0aCBoaWdoLXZlbG9jaXR5IGFpci4pIFRqCjAgLTEzIFRkCi9GMSA5LjUgVGYKKDMuIEFkbWluaXN0ZXIgaGlnaC1mbG93IE94eWdlbi4pIFRqCjAgLTEzIFRkCi9GMSA5LjUgVGYKKDQuIEVzdGFibGlzaCBJViBhY2Nlc3MgXChBTFNcKSBhbmQgYWRtaW5pc3RlciBjb29sIE5vcm1hbCBTYWxpbmUgYm9sdXMgXCgyMCBtTC9rZykgVGoKMCAtMTMgVGQKL0YyIDkuNSBUZgoodXAgdG8gMUxcKS4pIFRqCjAgLTEzIFRkCi9GMSA5LjUgVGYKKDUuIERvIE5PVCBnaXZlIGFueXRoaW5nIGJ5IG1vdXRoLikgVGoKMCAtMTMgVGQKRVQKQlQKL0YyIDggVGYKNTAgMzYgVGQKKF9fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fXykgVGoKMCAtMTIgVGQKKENPTkZJREVOVElBTCAmIFBST1BSSUVUQVJZIC0gU0ZHQSBFTVMgLSBQYWdlIDEgb2YgMSkgVGoKRVQKZW5kc3RyZWFtCmVuZG9iagp4cmVmCjAgNwowMDAwMDAwMDAwIDY1NTM1IGYgCjAwMDAwMDAwMDkgMDAwMDAgbiAKMDAwMDAwMDA1OCAwMDAwMCBuIAowMDAwMDAwMTE1IDAwMDAwIG4gCjAwMDAwMDAxOTAgMDAwMDAgbiAKMDAwMDAwMDI2MCAwMDAwMCBuIAowMDAwMDAwMzk2IDAwMDAwIG4gCnRyYWlsZXIKPDwgL1NpemUgNyAvUm9vdCAxIDAgUiA+PgpzdGFydHhyZWYKMjU0MgolJUVPRg==",
+      "content": "Six Flags Great Adventure Summer Environmental SOP:\nWith high ambient temperature and high humidity in the park:\n\nHeat Exhaustion Symptoms: Heavy sweating, pale skin, muscle cramps, fatigue, headache, dizziness, nausea/vomiting. Normal mental status.\nTreatment:\n1. Move patient to First Aid Station A/C immediately.\n2. Remove tight/excess clothing.\n3. Apply cool, damp cloths. Spray cool water.\n4. Provide active oral hydration (water or electrolyte drinks) if patient is fully conscious and cooperative.\n\nHeat Stroke Symptoms: High body temp (>103°F), hot/dry or heavily sweating skin, altered mental status (confusion, combativeness, lethargy), seizure, coma.\nTreatment:\n1. Medical Emergency! Request immediate backup and transport.\n2. Active Cooling: Apply ice packs to cervical, axillary, and inguinal regions. Fanning with high-velocity air.\n3. Administer high-flow Oxygen.\n4. Establish IV access (ALS) and administer cool Normal Saline bolus (20 mL/kg up to 1L).\n5. Do NOT give anything by mouth."
+    },
+    {
+      "id": "prot-3",
+      "title": "Traumatic Fractures and Extremity Splinting",
+      "type": "procedures",
+      "category": "Trauma",
+      "updatedAt": "2026-04-10",
+      "attachmentName": "SFGA_Clinical_Splinting_PMS_Protocol.pdf",
+      "attachmentType": "pdf",
+      "attachmentData": "data:application/pdf;base64,JVBERi0xLjQKMSAwIG9iago8PCAvVHlwZSAvQ2F0YWxvZyAvUGFnZXMgMiAwIFIgPj4KZW5kb2JqCjIgMCBvYmoKPDwgL1R5cGUgL1BhZ2VzIC9LaWRzIFs1IDAgUl0gL0NvdW50IDEgPj4KZW5kb2JqCjMgMCBvYmoKPDwgL1R5cGUgL0ZvbnQgL1N1YnR5cGUgL1R5cGUxIC9CYXNlRm9udCAvSGVsdmV0aWNhLUJvbGQgPj4KZW5kb2JqCjQgMCBvYmoKPDwgL1R5cGUgL0ZvbnQgL1N1YnR5cGUgL1R5cGUxIC9CYXNlRm9udCAvSGVsdmV0aWNhID4+CmVuZG9iago1IDAgb2JqCjw8IC9UeXBlIC9QYWdlIC9QYXJlbnQgMiAwIFIgL01lZGlhQm94IFswIDAgNjEyIDc5Ml0gL0NvbnRlbnRzIDYgMCBSIC9SZXNvdXJjZXMgPDwgL0ZvbnQgPDwgL0YxIDMgMCBSIC9GMiA0IDAgUiA+PiA+PiA+PgplbmRvYmoKNiAwIG9iago8PCAvTGVuZ3RoIDE0OTMgPj4Kc3RyZWFtCkJUCi9GMSAxNSBUZgo1MCA3NDIgVGQKKFRyYXVtYXRpYyBGcmFjdHVyZXMgYW5kIEV4dHJlbWl0eSBTcGxpbnRpbmcpIFRqCi9GMiA5IFRmCjAgLTE4IFRkCihTSVggRkxBR1MgR1JFQVQgQURWRU5UVVJFIEVNUyB8IE1FRElDQUwgJiBPUEVSQVRJT05BTCBESVJFQ1RJVkUpIFRqCi9GMiA4LjUgVGYKMCAtMTQgVGQKKEVmZmVjdGl2ZSBEYXRlOiAyMDI2LTA0LTEwIHwgTWVkaWNhbCBDb21tYW5kIEFwcHJvdmVkKSBUagowIC0xMiBUZAooX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fKSBUagovRjIgOS41IFRmCjAgLTE4IFRkCi9GMSA5LjUgVGYKKFN0YW5kYXJkIFNwbGludGluZyBQcm9jZWR1cmU6KSBUagowIC0xMyBUZAovRjEgOS41IFRmCigxLiBFeHBvc2UgdGhlIGluanVyeSBzaXRlLiBBc3Nlc3MgZGlzdGFsIHNlbnNvcnksIG1vdG9yLCBhbmQgY2lyY3VsYXRvcnkpIFRqCjAgLTEzIFRkCi9GMiA5LjUgVGYKKGZ1bmN0aW9uIFwoUE1TOiBQdWxzZSwgTW90b3IsIFNlbnNvcnlcKSBCRUZPUkUgc3BsaW50aW5nLikgVGoKMCAtMTMgVGQKL0YxIDkuNSBUZgooMi4gQ292ZXIgb3BlbiB3b3VuZHMgd2l0aCBzdGVyaWxlIGRyZXNzaW5ncyBiZWZvcmUgYXBwbHlpbmcgc3BsaW50LikgVGoKMCAtMTMgVGQKL0YxIDkuNSBUZgooMy4gU3BsaW50IHRoZSBqb2ludCBhYm92ZSBhbmQgYmVsb3cgdGhlIGZyYWN0dXJlIHNpdGUuKSBUagowIC0xMyBUZAovRjEgOS41IFRmCig0LiBBbGlnbiBzZXZlcmVseSBhbmd1bGF0ZWQgZnJhY3R1cmVzIHdpdGggZ2VudGxlIHRyYWN0aW9uIG9ubHkgaWYgcHVsc2UgaXMpIFRqCjAgLTEzIFRkCi9GMiA5LjUgVGYKKGFic2VudCBhbmQgdHJhbnNwb3J0IGlzIGRlbGF5ZWQuIElmIHJlc2lzdGFuY2UgaXMgbWV0LCBzcGxpbnQgaW4gdGhlIHBvc2l0aW9uKSBUagowIC0xMyBUZAovRjIgOS41IFRmCihvZiBkZWZvcm1pdHkuKSBUagowIC0xMyBUZAovRjEgOS41IFRmCig1LiBJbW1vYmlsaXplIHdpdGggY2FyZGJvYXJkIHNwbGludCwgU0FNIHNwbGludCwgb3IgdmFjdXVtIHNwbGludC4gRW5zdXJlIG5vdCkgVGoKMCAtMTMgVGQKL0YyIDkuNSBUZgoodG9vIHRpZ2h0LikgVGoKMCAtMTMgVGQKL0YxIDkuNSBUZgooNi4gUmUtYXNzZXNzIFBNUyBpbW1lZGlhdGVseSBBRlRFUiBzcGxpbnRpbmcgYW5kIGRvY3VtZW50LikgVGoKMCAtMTMgVGQKL0YxIDkuNSBUZgooNy4gQXBwbHkgY29sZCBwYWNrIHRvIHRoZSBzaXRlIHRvIHJlZHVjZSBzd2VsbGluZyBhbmQgcGFpbi4pIFRqCjAgLTEzIFRkCkVUCkJUCi9GMiA4IFRmCjUwIDM2IFRkCihfX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX18pIFRqCjAgLTEyIFRkCihDT05GSURFTlRJQUwgJiBQUk9QUklFVEFSWSAtIFNGR0EgRU1TIC0gUGFnZSAxIG9mIDEpIFRqCkVUCmVuZHN0cmVhbQplbmRvYmoKeHJlZgowIDcKMDAwMDAwMDAwMCA2NTUzNSBmIAowMDAwMDAwMDA5IDAwMDAwIG4gCjAwMDAwMDAwNTggMDAwMDAgbiAKMDAwMDAwMDExNSAwMDAwMCBuIAowMDAwMDAwMTkwIDAwMDAwIG4gCjAwMDAwMDAyNjAgMDAwMDAgbiAKMDAwMDAwMDM5NiAwMDAwMCBuIAp0cmFpbGVyCjw8IC9TaXplIDcgL1Jvb3QgMSAwIFIgPj4Kc3RhcnR4cmVmCjE5NDEKJSVFT0Y=",
+      "content": "Standard Splinting Procedure:\n1. Expose the injury site. Assess distal sensory, motor, and circulatory function (PMS: Pulse, Motor, Sensory) BEFORE splinting.\n2. Cover open wounds with sterile dressings before applying splint.\n3. Splint the joint above and below the fracture site.\n4. Align severely angulated fractures with gentle traction only if pulse is absent and transport is delayed. If resistance is met, splint in the position of deformity.\n5. Immobilize with cardboard splint, SAM splint, or vacuum splint. Ensure not too tight.\n6. Re-assess PMS immediately AFTER splinting and document.\n7. Apply cold pack to the site to reduce swelling and pain."
+    }
+  ],
+  "sops": [
+    {
+      "id": "sop-1",
+      "title": "Ambulance Staging & Park Gates Ingress",
+      "category": "Operations",
+      "updatedAt": "2026-03-20",
+      "content": "Gate Code / Ingress Instructions for EMS Crews:\n\n1. Primary Gate Access: Use Gate 4 (adjacent to Nitro coaster) for all standard park entries.\n2. Dispatch Notification: Always notify Dispatch ('Base') when passing through any gate.\n3. Speed Limit: The maximum speed limit inside the park pedestrian areas is 5 MPH. Headlights and warning flashers MUST be on. Sirens must be used with discretion and should be shut down in crowded walkways unless absolutely necessary.\n4. Spotter Rule: When backing up any EMS vehicle or driving through high-density queue areas, an on-duty EMT must dismount and act as a rear spotter.\n5. Staging Locations:\n   - Stage 1: Main First Aid (Behind Board Walk)\n   - Stage 2: Hurricane Harbor First Aid (Next to Calypso Wavepool)\n   - Stage 3: Safari Outpost Station (West side of park)"
+    },
+    {
+      "id": "sop-2",
+      "title": "Minor Incident Patient Release & Refusal (AMA)",
+      "category": "Documentation",
+      "updatedAt": "2026-02-15",
+      "content": "Against Medical Advice (AMA) Release Protocol:\n\nAll patients who are evaluated by EMS and refuse medical transport or further treatment must meet the following criteria to sign a refusal form:\n1. Patient must be of legal age (or parent/guardian present for minors).\n2. Patient must be fully oriented to person, place, time, and event (A&O x 4) and have no signs of cognitive impairment (drugs, alcohol, head trauma).\n3. The patient must understand the potential risks of refusing treatment (up to and including death).\n4. Clearly document:\n   - Full clinical assessment and vital signs.\n   - The specific risks explained to the patient.\n   - The presence of any family/friends who witnessed the refusal.\n   - Obtain patient signature, witness signature, and supervisor sign-off (if high risk).\n5. If the patient is a minor with no guardian present, contact Park Supervisor immediately to initiate administrative custody or hold."
+    }
+  ],
+  "contacts": [
+    {
+      "id": "c-1",
+      "department": "Safety",
+      "callsign": "701",
+      "name": "Sloane Murray",
+      "phone": "732-773-1872"
+    },
+    {
+      "id": "c-2",
+      "department": "Safety",
+      "callsign": "781",
+      "name": "Shane Havens",
+      "phone": "732-824-2181"
+    },
+    {
+      "id": "c-3",
+      "department": "Safety",
+      "callsign": "782",
+      "name": "Skylar Kohn",
+      "phone": "908-216-4926"
+    },
+    {
+      "id": "c-4",
+      "department": "Safety",
+      "callsign": "783",
+      "name": "Lylli D'Armetta",
+      "phone": "609-949-3633"
+    },
+    {
+      "id": "c-5",
+      "department": "Safety",
+      "callsign": "784",
+      "name": "Dylan Grebler",
+      "phone": "732-598-2556"
+    },
+    {
+      "id": "c-6",
+      "department": "Safety",
+      "callsign": "785",
+      "name": "Madison Prendergast",
+      "phone": "908-208-8933"
+    },
+    {
+      "id": "c-7",
+      "department": "Safety",
+      "callsign": "5811",
+      "name": "Jeff Morse",
+      "phone": "856-279-1953"
+    },
+    {
+      "id": "c-8",
+      "department": "Safety",
+      "callsign": "5812",
+      "name": "John Johnson",
+      "phone": "732-614-5948"
+    },
+    {
+      "id": "c-9",
+      "department": "Safety",
+      "callsign": "5813",
+      "name": "Rob Reillo",
+      "phone": "609-414-2542"
+    },
+    {
+      "id": "c-10",
+      "department": "Safety",
+      "callsign": "5814",
+      "name": "Derek Krum",
+      "phone": "609-738-7507"
+    },
+    {
+      "id": "c-11",
+      "department": "Safety",
+      "callsign": "787",
+      "name": "Joey Parker",
+      "phone": "609-949-9633"
+    },
+    {
+      "id": "c-12",
+      "department": "Emergency",
+      "callsign": "N/A",
+      "name": "Ocean County Dispatch",
+      "phone": "732-349-9100"
+    },
+    {
+      "id": "c-13",
+      "department": "Emergency",
+      "callsign": "N/A",
+      "name": "CSMC ER",
+      "phone": "732-294-2787"
+    },
+    {
+      "id": "c-14",
+      "department": "Emergency",
+      "callsign": "N/A",
+      "name": "Monmouth Med South ER",
+      "phone": "732-886-4525"
+    },
+    {
+      "id": "c-15",
+      "department": "Emergency",
+      "callsign": "N/A",
+      "name": "Jersey Shore UMC",
+      "phone": "732-897-2000"
+    },
+    {
+      "id": "c-16",
+      "department": "Emergency",
+      "callsign": "N/A",
+      "name": "RWJ Hamilton ER",
+      "phone": "609-584-6666"
+    }
+  ],
+  "extensions": [
+    {
+      "id": "e-1",
+      "extension": "2100",
+      "department": "Main First Aid Desk"
+    },
+    {
+      "id": "e-2",
+      "extension": "2105",
+      "department": "EMS Supervisor Office (790)"
+    },
+    {
+      "id": "e-3",
+      "extension": "2110",
+      "department": "Hurricane Harbor First Aid"
+    },
+    {
+      "id": "e-4",
+      "extension": "3200",
+      "department": "Security Operations Desk"
+    },
+    {
+      "id": "e-5",
+      "extension": "3250",
+      "department": "Security Front Gate"
+    },
+    {
+      "id": "e-6",
+      "extension": "4100",
+      "department": "Park Operations Command"
+    },
+    {
+      "id": "e-7",
+      "extension": "4150",
+      "department": "Guest Relations Admin"
+    },
+    {
+      "id": "e-8",
+      "extension": "5500",
+      "department": "Ride Maintenance Control"
+    },
+    {
+      "id": "e-9",
+      "extension": "5610",
+      "department": "Safari Outpost Care Clinic"
+    },
+    {
+      "id": "e-10",
+      "extension": "6200",
+      "department": "Human Resources Office"
+    }
+  ],
+  "tenCodes": [
+    {
+      "code": "10-1",
+      "meaning": "Receiving Poorly",
+      "category": "Standard Operations"
+    },
+    {
+      "code": "10-2",
+      "meaning": "Receiving Well",
+      "category": "Standard Operations"
+    },
+    {
+      "code": "10-4",
+      "meaning": "Affirmative",
+      "category": "Standard Operations"
+    },
+    {
+      "code": "10-6",
+      "meaning": "Busy",
+      "category": "Standard Operations"
+    },
+    {
+      "code": "10-7",
+      "meaning": "Out of Service",
+      "category": "Status Codes"
+    },
+    {
+      "code": "10-8",
+      "meaning": "In Service",
+      "category": "Status Codes"
+    },
+    {
+      "code": "10-9",
+      "meaning": "Repeat",
+      "category": "Standard Operations"
+    },
+    {
+      "code": "10-10",
+      "meaning": "Meet At",
+      "category": "Standard Operations"
+    },
+    {
+      "code": "10-12",
+      "meaning": "Board of Health",
+      "category": "Standard Operations"
+    },
+    {
+      "code": "10-13",
+      "meaning": "Traffic Report",
+      "category": "Standard Operations"
+    },
+    {
+      "code": "10-14",
+      "meaning": "Escort / Transport",
+      "category": "Standard Operations"
+    },
+    {
+      "code": "10-15",
+      "meaning": "Subject in Custody",
+      "category": "Standard Operations"
+    },
+    {
+      "code": "10-16",
+      "meaning": "Trash Pick-Up",
+      "category": "Standard Operations"
+    },
+    {
+      "code": "10-17",
+      "meaning": "Guest Concern",
+      "category": "Standard Operations"
+    },
+    {
+      "code": "10-19",
+      "meaning": "Return to Security / Medical",
+      "category": "Status Codes"
+    },
+    {
+      "code": "10-20",
+      "meaning": "Location",
+      "category": "Standard Operations"
+    },
+    {
+      "code": "10-21",
+      "meaning": "Phone Extension",
+      "category": "Standard Operations"
+    },
+    {
+      "code": "10-22",
+      "meaning": "Disregard",
+      "category": "Standard Operations"
+    },
+    {
+      "code": "10-23",
+      "meaning": "Standby",
+      "category": "Status Codes"
+    },
+    {
+      "code": "10-35",
+      "meaning": "Confidential Info",
+      "category": "Standard Operations"
+    },
+    {
+      "code": "10-36",
+      "meaning": "Correct Time",
+      "category": "Standard Operations"
+    },
+    {
+      "code": "10-47",
+      "meaning": "Alcohol Violation",
+      "category": "Emergency Signals"
+    },
+    {
+      "code": "10-50",
+      "meaning": "Stopping Vehicle",
+      "category": "Emergency Signals"
+    },
+    {
+      "code": "10-51",
+      "meaning": "Enroute",
+      "category": "Status Codes"
+    },
+    {
+      "code": "10-52",
+      "meaning": "ETA",
+      "category": "Standard Operations"
+    },
+    {
+      "code": "10-54",
+      "meaning": "Negative",
+      "category": "Standard Operations"
+    },
+    {
+      "code": "10-56",
+      "meaning": "Go To / Report",
+      "category": "Standard Operations"
+    },
+    {
+      "code": "10-58",
+      "meaning": "Return to Fire Station",
+      "category": "Status Codes"
+    },
+    {
+      "code": "10-81",
+      "meaning": "Personal Break",
+      "category": "Status Codes"
+    },
+    {
+      "code": "10-91",
+      "meaning": "Unauthorized Radio Traffic",
+      "category": "Standard Operations"
+    },
+    {
+      "code": "10-97",
+      "meaning": "Arrived",
+      "category": "Status Codes"
+    },
+    {
+      "code": "10-98",
+      "meaning": "Assignment Complete",
+      "category": "Status Codes"
+    },
+    {
+      "code": "10-100",
+      "meaning": "Emergency Radio Traffic Only",
+      "category": "Emergency Signals"
+    }
+  ],
+  "signals": [
+    {
+      "id": "Signal 0",
+      "meaning": "Armed",
+      "priority": "Critical"
+    },
+    {
+      "id": "Signal 0-K",
+      "meaning": "Armed w/ Knife",
+      "priority": "Critical"
+    },
+    {
+      "id": "Signal 0-F",
+      "meaning": "Armed w/ Firearm",
+      "priority": "Critical"
+    },
+    {
+      "id": "Signal 2",
+      "meaning": "Ride OOS w/ Guests",
+      "priority": "High"
+    },
+    {
+      "id": "Signal 2E",
+      "meaning": "Ride OOS Urgent",
+      "priority": "Critical"
+    },
+    {
+      "id": "Signal 4",
+      "meaning": "Motor Vehicle Accident",
+      "priority": "High"
+    },
+    {
+      "id": "Signal 5",
+      "meaning": "Murder",
+      "priority": "Critical"
+    },
+    {
+      "id": "Signal 7",
+      "meaning": "Dead on Arrival",
+      "priority": "Critical"
+    },
+    {
+      "id": "Signal 8",
+      "meaning": "Missing Person (Adult)",
+      "priority": "High"
+    },
+    {
+      "id": "Signal 9",
+      "meaning": "Vehicle Assist",
+      "priority": "Low"
+    },
+    {
+      "id": "Signal 10",
+      "meaning": "Stolen Vehicle",
+      "priority": "Medium"
+    },
+    {
+      "id": "Signal 11",
+      "meaning": "Abandoned Vehicle",
+      "priority": "Low"
+    },
+    {
+      "id": "Signal 12",
+      "meaning": "Reckless Driver",
+      "priority": "Medium"
+    },
+    {
+      "id": "Signal 13",
+      "meaning": "Suspicious Vehicle",
+      "priority": "Medium"
+    },
+    {
+      "id": "Signal 13-P",
+      "meaning": "Suspicious Person",
+      "priority": "Medium"
+    },
+    {
+      "id": "Signal 13-N",
+      "meaning": "Undesirable Person",
+      "priority": "Medium"
+    },
+    {
+      "id": "Signal 15",
+      "meaning": "Special Assignment",
+      "priority": "Low"
+    },
+    {
+      "id": "Signal 16",
+      "meaning": "Obstruction in Roadway",
+      "priority": "Medium"
+    },
+    {
+      "id": "Signal 17 T",
+      "meaning": "Trainer needs Medical Assistance",
+      "priority": "High"
+    },
+    {
+      "id": "Signal 18 Red",
+      "meaning": "Dangerous Animal Escape",
+      "priority": "Critical"
+    },
+    {
+      "id": "Signal 18 Green",
+      "meaning": "Animal Captured",
+      "priority": "Medium"
+    },
+    {
+      "id": "Signal 20",
+      "meaning": "Mentally Ill Person",
+      "priority": "Medium"
+    },
+    {
+      "id": "Signal 21",
+      "meaning": "Breaking and Entering",
+      "priority": "High"
+    },
+    {
+      "id": "Signal 22",
+      "meaning": "Disturbance",
+      "priority": "Medium"
+    },
+    {
+      "id": "Signal 22-A",
+      "meaning": "Fight in Progress",
+      "priority": "High"
+    },
+    {
+      "id": "Signal 23",
+      "meaning": "Robbery",
+      "priority": "Critical"
+    },
+    {
+      "id": "Signal 24",
+      "meaning": "Theft",
+      "priority": "Medium"
+    },
+    {
+      "id": "Signal 25",
+      "meaning": "Fire",
+      "priority": "Critical"
+    },
+    {
+      "id": "Signal 26",
+      "meaning": "Drowning",
+      "priority": "Critical"
+    },
+    {
+      "id": "Signal 28",
+      "meaning": "Suicide",
+      "priority": "Critical"
+    },
+    {
+      "id": "Signal 29",
+      "meaning": "Alarm",
+      "priority": "High"
+    },
+    {
+      "id": "Signal 36",
+      "meaning": "Key Assist",
+      "priority": "Low"
+    },
+    {
+      "id": "Signal 37",
+      "meaning": "First Aid Request",
+      "priority": "High"
+    },
+    {
+      "id": "Signal 38",
+      "meaning": "Guest Assist",
+      "priority": "Low"
+    },
+    {
+      "id": "Signal 39",
+      "meaning": "Money Transfer",
+      "priority": "Low"
+    },
+    {
+      "id": "Signal 41",
+      "meaning": "Shoplifting",
+      "priority": "Medium"
+    },
+    {
+      "id": "Signal 43",
+      "meaning": "Soliciting",
+      "priority": "Low"
+    },
+    {
+      "id": "Signal 47",
+      "meaning": "Indecent Exposure",
+      "priority": "Medium"
+    },
+    {
+      "id": "Signal 49",
+      "meaning": "Counterfeit Money",
+      "priority": "Medium"
+    },
+    {
+      "id": "Signal 50",
+      "meaning": "Motor Assist",
+      "priority": "Low"
+    },
+    {
+      "id": "Signal 51",
+      "meaning": "Drunk Driver",
+      "priority": "High"
+    },
+    {
+      "id": "Signal 52",
+      "meaning": "Drunk Person",
+      "priority": "Medium"
+    },
+    {
+      "id": "Signal 53",
+      "meaning": "Hit & Run",
+      "priority": "High"
+    },
+    {
+      "id": "Signal 55",
+      "meaning": "Explosion",
+      "priority": "Critical"
+    },
+    {
+      "id": "Signal 55-A",
+      "meaning": "Bomb Threat",
+      "priority": "Critical"
+    },
+    {
+      "id": "Signal 57",
+      "meaning": "Hunters",
+      "priority": "Medium"
+    },
+    {
+      "id": "Signal 58",
+      "meaning": "Fireworks",
+      "priority": "Low"
+    },
+    {
+      "id": "Signal 61",
+      "meaning": "Building Check",
+      "priority": "Low"
+    },
+    {
+      "id": "Signal 66",
+      "meaning": "Sexual Offense",
+      "priority": "High"
+    },
+    {
+      "id": "Signal 70",
+      "meaning": "Lost Child",
+      "priority": "High"
+    },
+    {
+      "id": "Signal 95",
+      "meaning": "Drug Violation",
+      "priority": "Medium"
+    },
+    {
+      "id": "Signal 95-A",
+      "meaning": "Drug Transaction",
+      "priority": "High"
+    },
+    {
+      "id": "Signal 96",
+      "meaning": "Vicious Animal",
+      "priority": "High"
+    },
+    {
+      "id": "Signal 97",
+      "meaning": "Illegal Entry",
+      "priority": "Medium"
+    },
+    {
+      "id": "Signal 999",
+      "meaning": "Unit in Distress",
+      "priority": "Critical"
+    },
+    {
+      "id": "Signal 1000",
+      "meaning": "CC Alarm",
+      "priority": "High"
+    },
+    {
+      "id": "Signal 2000",
+      "meaning": "ATM Alarm",
+      "priority": "High"
+    },
+    {
+      "id": "Signal 3000",
+      "meaning": "HH CC Alarm",
+      "priority": "High"
+    },
+    {
+      "id": "Signal 9000",
+      "meaning": "Park Evacuation",
+      "priority": "Critical"
+    },
+    {
+      "id": "Signal 10000",
+      "meaning": "Housing Evacuation",
+      "priority": "Critical"
+    }
+  ],
+  "schedule": {
+    "Monday": {
+      "sup790": {
+        "id": "2",
+        "name": "Skylar Kohn",
+        "phone": "908-216-4926"
+      },
+      "sup170": {
+        "id": "1",
+        "name": "Shane Havens",
+        "phone": "732-824-2181"
+      }
+    },
+    "Tuesday": {
+      "sup790": {
+        "id": "3",
+        "name": "Lyli D'Armetta",
+        "phone": "732-589-1932"
+      },
+      "sup170": {
+        "id": "2",
+        "name": "Skylar Kohn",
+        "phone": "908-216-4926"
+      }
+    },
+    "Wednesday": {
+      "sup790": {
+        "id": "4",
+        "name": "Dylan Grebler",
+        "phone": "732-598-2556"
+      },
+      "sup170": {
+        "id": "3",
+        "name": "Lyli D'Armetta",
+        "phone": "732-589-1932"
+      }
+    },
+    "Thursday": {
+      "sup790": {
+        "id": "5",
+        "name": "Madison Prendergast",
+        "phone": "908-208-8933"
+      },
+      "sup170": {
+        "id": "4",
+        "name": "Dylan Grebler",
+        "phone": "732-598-2556"
+      }
+    },
+    "Friday": {
+      "sup790": {
+        "id": "1",
+        "name": "Shane Havens",
+        "phone": "732-824-2181"
+      },
+      "sup170": {
+        "id": "5",
+        "name": "Madison Prendergast",
+        "phone": "908-208-8933"
+      }
+    },
+    "Saturday": {
+      "sup790": {
+        "id": "2",
+        "name": "Skylar Kohn",
+        "phone": "908-216-4926"
+      },
+      "sup170": {
+        "id": "1",
+        "name": "Shane Havens",
+        "phone": "732-824-2181"
+      }
+    },
+    "Sunday": {
+      "sup790": {
+        "id": "3",
+        "name": "Lyli D'Armetta",
+        "phone": "732-589-1932"
+      },
+      "sup170": {
+        "id": "2",
+        "name": "Skylar Kohn",
+        "phone": "908-216-4926"
+      }
+    }
+  },
+  "weatherData": {
+    "zipCode": "08527",
+    "location": "Jackson, NJ",
+    "condition": "Partly Cloudy",
+    "temp": 84,
+    "feelsLike": 89,
+    "wind": "9 mph SW",
+    "humidity": 64,
+    "cloudCover": 35,
+    "precipitation": "15%",
+    "hourly": [
+      {
+        "time": "08:00 AM",
+        "temp": 74,
+        "condition": "Sunny",
+        "precip": 0,
+        "wind": "5 mph W"
+      },
+      {
+        "time": "10:00 AM",
+        "temp": 79,
+        "condition": "Sunny",
+        "precip": 5,
+        "wind": "6 mph SW"
+      },
+      {
+        "time": "12:00 PM",
+        "temp": 83,
+        "condition": "Partly Cloudy",
+        "precip": 10,
+        "wind": "8 mph SW"
+      },
+      {
+        "time": "02:00 PM",
+        "temp": 85,
+        "condition": "Partly Cloudy",
+        "precip": 15,
+        "wind": "10 mph SW"
+      },
+      {
+        "time": "04:00 PM",
+        "temp": 84,
+        "condition": "Partly Cloudy",
+        "precip": 15,
+        "wind": "9 mph SW"
+      },
+      {
+        "time": "06:00 PM",
+        "temp": 81,
+        "condition": "Partly Cloudy",
+        "precip": 10,
+        "wind": "7 mph S"
+      },
+      {
+        "time": "08:00 PM",
+        "temp": 77,
+        "condition": "Clear",
+        "precip": 5,
+        "wind": "5 mph S"
+      },
+      {
+        "time": "10:00 PM",
+        "temp": 73,
+        "condition": "Clear",
+        "precip": 0,
+        "wind": "4 mph S"
+      }
+    ]
+  },
+  "predefinedSupervisorsList": [
+    {
+      "id": "1",
+      "name": "Shane Havens",
+      "phone": "732-824-2181"
+    },
+    {
+      "id": "2",
+      "name": "Skylar Kohn",
+      "phone": "908-216-4926"
+    },
+    {
+      "id": "3",
+      "name": "Lyli D'Armetta",
+      "phone": "732-589-1932"
+    },
+    {
+      "id": "4",
+      "name": "Dylan Grebler",
+      "phone": "732-598-2556"
+    },
+    {
+      "id": "5",
+      "name": "Madison Prendergast",
+      "phone": "908-208-8933"
+    }
+  ],
+  "staffNamesList": [
+    "Shane Havens",
+    "Skylar Kohn",
+    "Lyli D'Armetta",
+    "Dylan Grebler",
+    "Madison Prendergast",
+    "Ryan Miller",
+    "Amanda Smith",
+    "David Jones",
+    "Sarah Conner",
+    "Michael Chang",
+    "Jessica Williams",
+    "James Thompson",
+    "Emily Davis",
+    "Kyle Anderson",
+    "Brianna Scott",
+    "Thomas Kelly",
+    "Medic 2 Crew (ALS Rescue)",
+    "Medic 3 Crew (Station 1)",
+    "Main First Aid Dispatcher",
+    "Hurricane Harbor Crew"
+  ],
+  "maps": {
+    "operational": {
+      "id": "operational",
+      "title": "Operational Map",
+      "imageData": "",
+      "fileName": "",
+      "fileSize": "",
+      "updatedAt": "",
+      "uploadedBy": ""
+    },
+    "frightFest": {
+      "id": "frightFest",
+      "title": "Fright Fest Map",
+      "imageData": "",
+      "fileName": "",
+      "fileSize": "",
+      "updatedAt": "",
+      "uploadedBy": ""
+    }
+  }
+}
