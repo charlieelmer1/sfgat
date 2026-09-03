@@ -1,5 +1,6 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState, useMemo } from "react";
 import * as pdfjsLib from "pdfjs-dist";
+import pdfWorker from "pdfjs-dist/build/pdf.worker.min.mjs?url";
 import {
   ChevronLeft,
   ChevronRight,
@@ -16,15 +17,32 @@ import {
   ExternalLink,
   Smartphone,
   Layers,
-  File
+  File,
+  Eye
 } from "lucide-react";
 
-// Configure PDF.js worker
+// Polyfill Promise.try and Uint8Array.prototype.toHex for older Safari / iPadOS WebKit versions
+if (typeof (Promise as any).try !== "function") {
+  (Promise as any).try = function (fn: (...args: any[]) => any, ...args: any[]) {
+    return new Promise((resolve) => resolve(fn(...args)));
+  };
+}
+
+if (typeof (Uint8Array.prototype as any).toHex !== "function") {
+  (Uint8Array.prototype as any).toHex = function () {
+    return Array.from(this)
+      .map((b) => (b as number).toString(16).padStart(2, "0"))
+      .join("");
+  };
+}
+
+// Configure PDF.js worker with same-origin bundled asset from Vite
 if (typeof window !== "undefined") {
   try {
-    pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`;
-  } catch {
-    pdfjsLib.GlobalWorkerOptions.workerSrc = "https://unpkg.com/pdfjs-dist@5.4.394/build/pdf.worker.min.mjs";
+    pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorker;
+  } catch (e) {
+    console.warn("Could not assign bundled pdfWorker, using CDN fallback:", e);
+    pdfjsLib.GlobalWorkerOptions.workerSrc = "https://unpkg.com/pdfjs-dist@4.10.38/build/pdf.worker.min.mjs";
   }
 }
 
@@ -44,6 +62,7 @@ interface PageCanvasProps {
   rotation: number;
   containerWidth: number;
   isFullscreen: boolean;
+  onRenderFail?: () => void;
   key?: React.Key;
 }
 
@@ -56,20 +75,25 @@ function PageCanvas({
   rotation,
   containerWidth,
   isFullscreen,
+  onRenderFail,
 }: PageCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [rendering, setRendering] = useState(true);
+  const [renderError, setRenderError] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
+    let currentRenderTask: any = null;
+
     const render = async () => {
       if (!pdfDoc || !canvasRef.current) return;
       try {
         setRendering(true);
+        setRenderError(null);
         const page = await pdfDoc.getPage(pageNumber);
-        if (cancelled) return;
+        if (cancelled || !canvasRef.current) return;
         const canvas = canvasRef.current;
-        const context = canvas.getContext("2d");
+        const context = canvas.getContext("2d", { willReadFrequently: false });
         if (!context) return;
 
         const unscaledViewport = page.getViewport({ scale: 1, rotation });
@@ -89,22 +113,23 @@ function PageCanvas({
         canvas.style.width = `${Math.floor(viewport.width)}px`;
         canvas.style.height = `${Math.floor(viewport.height)}px`;
 
-        context.imageSmoothingEnabled = true;
-        context.imageSmoothingQuality = "high";
-
         const renderParams: any = {
           canvasContext: context,
           viewport,
-          canvas,
         };
         if (pixelRatio !== 1) {
           renderParams.transform = [pixelRatio, 0, 0, pixelRatio, 0, 0];
         }
 
-        await (page.render(renderParams) as any).promise;
+        currentRenderTask = page.render(renderParams);
+        await currentRenderTask.promise;
       } catch (err: any) {
         if (err?.name !== "RenderingCancelledException") {
           console.error(`Error rendering page ${pageNumber}:`, err);
+          if (!cancelled) {
+            setRenderError(err?.message || "Render failed");
+            if (onRenderFail) onRenderFail();
+          }
         }
       } finally {
         if (!cancelled) setRendering(false);
@@ -114,18 +139,29 @@ function PageCanvas({
     render();
     return () => {
       cancelled = true;
+      if (currentRenderTask) {
+        try {
+          currentRenderTask.cancel();
+        } catch {}
+      }
     };
-  }, [pdfDoc, pageNumber, scale, rotation, containerWidth, isFullscreen]);
+  }, [pdfDoc, pageNumber, scale, rotation, containerWidth, isFullscreen, onRenderFail]);
 
   return (
     <div className="relative bg-white rounded-lg shadow-xl overflow-hidden border border-slate-300 max-w-full my-3 transition-shadow hover:shadow-2xl">
       {rendering && (
-        <div className="absolute inset-0 bg-slate-100/70 backdrop-blur-[1px] flex flex-col items-center justify-center z-10 gap-1.5 p-4 min-h-[300px]">
+        <div className="absolute inset-0 bg-slate-100/75 backdrop-blur-[1px] flex flex-col items-center justify-center z-10 gap-1.5 p-4 min-h-[300px]">
           <Loader2 className="w-6 h-6 text-red-600 animate-spin" />
           <span className="text-[11px] font-mono text-slate-600">Rendering Page {pageNumber}...</span>
         </div>
       )}
-      <canvas ref={canvasRef} className="block mx-auto max-w-full h-auto" />
+      {renderError ? (
+        <div className="p-6 text-center text-red-600 bg-red-50 text-xs font-mono">
+          Unable to render Page {pageNumber}. Please switch to iPad Native Viewer.
+        </div>
+      ) : (
+        <canvas ref={canvasRef} className="block mx-auto max-w-full h-auto" />
+      )}
       <div className="bg-slate-50 border-t border-slate-200 px-3 py-1.5 flex items-center justify-between text-[11px] font-mono text-slate-600">
         <span className="font-semibold">Page {pageNumber} of {totalPages}</span>
         <span className="text-[10px] text-slate-400">SFGA EMS DIRECTIVE</span>
@@ -152,51 +188,67 @@ export default function PdfViewer({
   const [error, setError] = useState<string | null>(null);
   const [containerWidth, setContainerWidth] = useState<number>(0);
   const [blobUrl, setBlobUrl] = useState<string>("");
-  const [viewMode, setViewMode] = useState<"scroll" | "single">("scroll");
-  const [useNativeViewer, setUseNativeViewer] = useState<boolean>(false);
+  const [viewMode, setViewMode] = useState<"scroll" | "single" | "native">("scroll");
 
-  // Helper to convert base64 or URL to Uint8Array for PDF.js and generate Blob URL for mobile viewing
-  const getPdfSource = (data: string): Uint8Array | string => {
-    if (data.startsWith("data:application/pdf;base64,") || data.startsWith("data:application/octet-stream;base64,")) {
-      const base64 = data.split(",")[1];
-      const binaryString = window.atob(base64);
-      const len = binaryString.length;
-      const bytes = new Uint8Array(len);
-      for (let i = 0; i < len; i++) {
-        bytes[i] = binaryString.charCodeAt(i);
-      }
-      try {
-        const blob = new Blob([bytes], { type: "application/pdf" });
-        const url = URL.createObjectURL(blob);
-        setBlobUrl(url);
-      } catch (e) {
-        console.warn("Blob creation notice:", e);
-      }
-      return bytes;
-    }
-    if (data.startsWith("http://") || data.startsWith("https://") || data.startsWith("/")) {
-      setBlobUrl(data);
-      return data;
-    }
-    // Assume raw base64
+  // Detect iOS / iPadOS Safari environments
+  const isAppleDevice = useMemo(() => {
+    if (typeof navigator === "undefined") return false;
+    return (
+      /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+      (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1)
+    );
+  }, []);
+
+  // Stable Blob URL generation with proper cleanup to prevent memory leaks
+  useEffect(() => {
+    let createdUrl: string | null = null;
     try {
-      const binaryString = window.atob(data.trim());
-      const len = binaryString.length;
-      const bytes = new Uint8Array(len);
-      for (let i = 0; i < len; i++) {
-        bytes[i] = binaryString.charCodeAt(i);
+      if (!pdfData) {
+        setBlobUrl("");
+        return;
       }
-      const blob = new Blob([bytes], { type: "application/pdf" });
-      const url = URL.createObjectURL(blob);
-      setBlobUrl(url);
-      return bytes;
-    } catch {
-      setBlobUrl(data);
-      return data;
-    }
-  };
 
-  // Monitor container width for responsive scaling on desktop and mobile phones
+      if (pdfData.startsWith("data:application/pdf;base64,") || pdfData.startsWith("data:application/octet-stream;base64,")) {
+        const base64 = pdfData.split(",")[1].replace(/\s/g, "");
+        const binaryString = window.atob(base64);
+        const len = binaryString.length;
+        const bytes = new Uint8Array(len);
+        for (let i = 0; i < len; i++) {
+          bytes[i] = binaryString.charCodeAt(i);
+        }
+        const blob = new Blob([bytes], { type: "application/pdf" });
+        createdUrl = URL.createObjectURL(blob);
+        setBlobUrl(createdUrl);
+      } else if (pdfData.startsWith("http://") || pdfData.startsWith("https://") || pdfData.startsWith("/")) {
+        setBlobUrl(pdfData);
+      } else {
+        // Raw base64 string
+        const base64 = pdfData.trim().replace(/\s/g, "");
+        const binaryString = window.atob(base64);
+        const len = binaryString.length;
+        const bytes = new Uint8Array(len);
+        for (let i = 0; i < len; i++) {
+          bytes[i] = binaryString.charCodeAt(i);
+        }
+        const blob = new Blob([bytes], { type: "application/pdf" });
+        createdUrl = URL.createObjectURL(blob);
+        setBlobUrl(createdUrl);
+      }
+    } catch (err) {
+      console.error("Error creating blob URL from pdfData:", err);
+      setBlobUrl(pdfData);
+    }
+
+    return () => {
+      if (createdUrl) {
+        try {
+          URL.revokeObjectURL(createdUrl);
+        } catch {}
+      }
+    };
+  }, [pdfData]);
+
+  // Monitor container width for responsive scaling
   useEffect(() => {
     if (!containerRef.current) return;
     const handleResize = () => {
@@ -223,6 +275,36 @@ export default function PdfViewer({
     };
   }, []);
 
+  // Helper to get binary array for PDF.js parser
+  const getPdfSource = (data: string): Uint8Array | string => {
+    if (data.startsWith("data:application/pdf;base64,") || data.startsWith("data:application/octet-stream;base64,")) {
+      const base64 = data.split(",")[1].replace(/\s/g, "");
+      const binaryString = window.atob(base64);
+      const len = binaryString.length;
+      const bytes = new Uint8Array(len);
+      for (let i = 0; i < len; i++) {
+        bytes[i] = binaryString.charCodeAt(i);
+      }
+      return bytes;
+    }
+    if (data.startsWith("http://") || data.startsWith("https://") || data.startsWith("/")) {
+      return data;
+    }
+    // Raw base64
+    try {
+      const base64 = data.trim().replace(/\s/g, "");
+      const binaryString = window.atob(base64);
+      const len = binaryString.length;
+      const bytes = new Uint8Array(len);
+      for (let i = 0; i < len; i++) {
+        bytes[i] = binaryString.charCodeAt(i);
+      }
+      return bytes;
+    } catch {
+      return data;
+    }
+  };
+
   // Load PDF Document
   useEffect(() => {
     let isCancelled = false;
@@ -232,7 +314,15 @@ export default function PdfViewer({
     const loadDoc = async () => {
       try {
         const source = getPdfSource(pdfData);
-        const loadingTask = pdfjsLib.getDocument(typeof source === "string" ? { url: source } : { data: source });
+        const loadingTask = pdfjsLib.getDocument(
+          typeof source === "string"
+            ? { url: source }
+            : {
+                data: source,
+                cMapUrl: "https://unpkg.com/pdfjs-dist@4.10.38/cmaps/",
+                cMapPacked: true,
+              }
+        );
         const doc = await loadingTask.promise;
         if (!isCancelled) {
           setPdfDoc(doc);
@@ -243,8 +333,10 @@ export default function PdfViewer({
       } catch (err: any) {
         if (!isCancelled) {
           console.error("PDF.js load error:", err);
-          setError(err?.message || "Failed to load PDF document.");
+          setError(err?.message || "Failed to parse PDF document.");
           setLoading(false);
+          // On mobile or iPad if canvas engine fails, automatically offer native embed
+          setViewMode("native");
         }
       }
     };
@@ -309,6 +401,8 @@ export default function PdfViewer({
     document.body.removeChild(link);
   };
 
+  const targetPdfUrl = blobUrl || pdfData;
+
   return (
     <div
       ref={containerRef}
@@ -318,7 +412,7 @@ export default function PdfViewer({
           : className
       }`}
     >
-      {/* Top Toolbar - Fully Responsive for Mobile Phones and Desktop */}
+      {/* Top Toolbar - Fully Responsive for Mobile, iPad, and Desktop */}
       <div className="bg-slate-850 border-b border-slate-700 px-3 py-2.5 flex flex-wrap items-center justify-between gap-2 shrink-0">
         
         {/* Document Title & File Info */}
@@ -336,39 +430,48 @@ export default function PdfViewer({
           </div>
         </div>
 
-        {/* Action Controls - Mobile Accessible */}
+        {/* Action Controls */}
         <div className="flex items-center gap-1 sm:gap-1.5 flex-wrap">
           
-          {/* View Mode Toggle: Continuous Scroll vs Single Page */}
-          {numPages > 1 && !useNativeViewer && (
-            <div className="flex bg-slate-800 rounded-lg border border-slate-700 p-0.5 text-xs font-mono">
-              <button
-                type="button"
-                onClick={() => setViewMode("scroll")}
-                className={`px-2 py-1 rounded text-[10px] font-semibold flex items-center gap-1 cursor-pointer transition-colors ${
-                  viewMode === "scroll" ? "bg-red-600 text-white" : "text-slate-400 hover:text-white"
-                }`}
-                title="Scroll All Pages"
-              >
-                <Layers className="w-3 h-3" />
-                <span className="hidden sm:inline">All Pages</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setViewMode("single")}
-                className={`px-2 py-1 rounded text-[10px] font-semibold flex items-center gap-1 cursor-pointer transition-colors ${
-                  viewMode === "single" ? "bg-red-600 text-white" : "text-slate-400 hover:text-white"
-                }`}
-                title="Single Page View"
-              >
-                <File className="w-3 h-3" />
-                <span className="hidden sm:inline">Page by Page</span>
-              </button>
-            </div>
-          )}
+          {/* View Mode Switcher: Continuous Scroll vs Single Page vs iPad Native Embed */}
+          <div className="flex bg-slate-800 rounded-lg border border-slate-700 p-0.5 text-xs font-mono">
+            <button
+              type="button"
+              onClick={() => setViewMode("scroll")}
+              className={`px-2 py-1 rounded text-[10px] font-semibold flex items-center gap-1 cursor-pointer transition-colors ${
+                viewMode === "scroll" ? "bg-red-600 text-white" : "text-slate-400 hover:text-white"
+              }`}
+              title="Continuous Multi-Page View"
+            >
+              <Layers className="w-3 h-3" />
+              <span className="hidden sm:inline">All Pages</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setViewMode("single")}
+              className={`px-2 py-1 rounded text-[10px] font-semibold flex items-center gap-1 cursor-pointer transition-colors ${
+                viewMode === "single" ? "bg-red-600 text-white" : "text-slate-400 hover:text-white"
+              }`}
+              title="Single Page View"
+            >
+              <File className="w-3 h-3" />
+              <span className="hidden sm:inline">Page by Page</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setViewMode("native")}
+              className={`px-2 py-1 rounded text-[10px] font-semibold flex items-center gap-1 cursor-pointer transition-colors ${
+                viewMode === "native" ? "bg-blue-600 text-white font-bold" : "text-slate-400 hover:text-white"
+              }`}
+              title="iPad Native WebKit Reader"
+            >
+              <Smartphone className="w-3 h-3" />
+              <span>{isAppleDevice ? "iPad Native" : "Embed"}</span>
+            </button>
+          </div>
 
           {/* Page Navigator for Single Mode */}
-          {viewMode === "single" && numPages > 1 && !useNativeViewer && (
+          {viewMode === "single" && numPages > 1 && (
             <div className="flex items-center bg-slate-800 rounded-lg border border-slate-700 text-xs font-mono px-1 py-0.5 shadow-inner">
               <button
                 type="button"
@@ -404,8 +507,8 @@ export default function PdfViewer({
             </div>
           )}
 
-          {/* Zoom Controls */}
-          {!useNativeViewer && (
+          {/* Zoom Controls for Canvas Modes */}
+          {viewMode !== "native" && (
             <div className="flex items-center bg-slate-800 rounded-lg border border-slate-700 text-xs px-1 py-0.5 shadow-inner">
               <button
                 type="button"
@@ -438,8 +541,8 @@ export default function PdfViewer({
             </div>
           )}
 
-          {/* Rotate Control */}
-          {!useNativeViewer && (
+          {/* Rotate Control for Canvas Modes */}
+          {viewMode !== "native" && (
             <button
               type="button"
               onClick={handleRotate}
@@ -452,18 +555,17 @@ export default function PdfViewer({
             </button>
           )}
 
-          {/* Mobile Direct Open in Native Viewer (iOS Safari / Android) */}
-          {/* Open in new tab / iPad Safari */}
+          {/* Open in iPad Safari / Native App Tab */}
           <a
-            href={blobUrl || pdfData}
+            href={targetPdfUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="p-1.5 bg-slate-800 hover:bg-slate-700 text-blue-300 hover:text-white rounded-lg border border-slate-700 cursor-pointer text-xs transition-colors flex items-center gap-1"
-            title="Open in iPad Safari / Native App"
+            className="p-1.5 bg-blue-900/60 hover:bg-blue-800 text-blue-200 hover:text-white rounded-lg border border-blue-700 cursor-pointer text-xs transition-colors flex items-center gap-1 font-bold"
+            title="Open in iPad Safari / Native Tab"
             aria-label="Open PDF in new tab"
           >
-            <ExternalLink className="w-3.5 h-3.5" />
-            <span className="hidden md:inline text-[10px] font-mono">Open in Tab</span>
+            <ExternalLink className="w-3.5 h-3.5 text-blue-400" />
+            <span className="text-[10px] font-mono">Safari Tab</span>
           </a>
 
           {/* Download PDF */}
@@ -501,33 +603,77 @@ export default function PdfViewer({
         </div>
       </div>
 
-      {/* Main Canvas / PDF Viewport Area with Touch-Friendly Scrolling */}
-      <div className="flex-1 bg-slate-950 p-2 sm:p-4 overflow-x-auto overflow-y-auto min-h-[350px] max-h-[750px] relative touch-pan-x touch-pan-y">
-        {loading ? (
-          <div className="flex flex-col items-center justify-center p-12 text-center text-slate-400 gap-3 min-h-[300px]">
+      {/* Main Viewport Area */}
+      <div className="flex-1 bg-slate-950 p-2 sm:p-4 overflow-x-auto overflow-y-auto min-h-[400px] max-h-[800px] relative touch-pan-x touch-pan-y">
+        {/* Native iPad / WebKit Embed Mode */}
+        {viewMode === "native" ? (
+          <div className="w-full h-full min-h-[550px] bg-slate-900 rounded-lg overflow-hidden border border-slate-800 flex flex-col">
+            <div className="bg-slate-850 px-3 py-2 border-b border-slate-800 flex items-center justify-between text-xs text-slate-300 font-mono">
+              <span className="flex items-center gap-1.5">
+                <Smartphone className="w-3.5 h-3.5 text-blue-400" />
+                iPad Native WebKit Engine (Pinch-to-zoom & Full Scroll Enabled)
+              </span>
+              <a
+                href={targetPdfUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-[11px] text-blue-400 hover:text-blue-300 underline font-bold flex items-center gap-1"
+              >
+                <ExternalLink className="w-3 h-3" /> Open in Safari Fullscreen
+              </a>
+            </div>
+            <div className="flex-1 w-full min-h-[500px]">
+              <object
+                data={targetPdfUrl}
+                type="application/pdf"
+                className="w-full h-[650px] rounded-b-lg"
+              >
+                <iframe
+                  src={targetPdfUrl}
+                  title={title}
+                  className="w-full h-[650px] border-none rounded-b-lg"
+                >
+                  <div className="p-8 text-center text-slate-300 space-y-3">
+                    <p className="text-sm font-semibold">Your browser requires direct PDF opening.</p>
+                    <a
+                      href={targetPdfUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-bold text-xs"
+                    >
+                      <ExternalLink className="w-4 h-4" /> Tap to Open in iPad Reader
+                    </a>
+                  </div>
+                </iframe>
+              </object>
+            </div>
+          </div>
+        ) : loading ? (
+          <div className="flex flex-col items-center justify-center p-12 text-center text-slate-400 gap-3 min-h-[350px]">
             <Loader2 className="w-8 h-8 text-red-500 animate-spin" />
-            <span className="text-xs font-mono font-medium">Preparing multi-page PDF for mobile & desktop...</span>
+            <span className="text-xs font-mono font-medium">Preparing multi-page PDF document...</span>
           </div>
         ) : error ? (
           <div className="bg-red-950/60 border border-red-800 p-5 sm:p-6 rounded-xl max-w-md mx-auto text-center space-y-3 my-8">
             <AlertCircle className="w-8 h-8 text-red-400 mx-auto" />
-            <h5 className="text-sm font-bold text-red-200">Unable to Preview PDF Inline</h5>
+            <h5 className="text-sm font-bold text-red-200">Unable to Render with Canvas</h5>
             <p className="text-xs text-red-300 leading-relaxed font-mono">{error}</p>
             <div className="pt-2 flex flex-wrap justify-center gap-2">
               <button
                 type="button"
-                onClick={handleOpenInNewTab}
+                onClick={() => setViewMode("native")}
                 className="px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold flex items-center gap-1.5 cursor-pointer"
               >
-                <ExternalLink className="w-3.5 h-3.5" /> Open in Mobile Tab
+                <Smartphone className="w-3.5 h-3.5" /> Switch to iPad Native Embed
               </button>
-              <button
-                type="button"
-                onClick={() => setUseNativeViewer(true)}
+              <a
+                href={targetPdfUrl}
+                target="_blank"
+                rel="noopener noreferrer"
                 className="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-lg text-xs font-bold flex items-center gap-1.5 cursor-pointer"
               >
-                <Smartphone className="w-3.5 h-3.5" /> Try Native Mobile Embed
-              </button>
+                <ExternalLink className="w-3.5 h-3.5" /> Open in Safari Tab
+              </a>
               <button
                 type="button"
                 onClick={handleDownload}
@@ -536,14 +682,6 @@ export default function PdfViewer({
                 <Download className="w-3.5 h-3.5" /> Download PDF
               </button>
             </div>
-          </div>
-        ) : useNativeViewer && blobUrl ? (
-          <div className="w-full h-[600px] bg-slate-900 rounded-lg overflow-hidden border border-slate-800">
-            <iframe
-              src={blobUrl}
-              title={title}
-              className="w-full h-full border-none"
-            />
           </div>
         ) : pdfDoc ? (
           <div className="flex flex-col items-center justify-center w-full max-w-full">
@@ -560,6 +698,7 @@ export default function PdfViewer({
                     rotation={rotation}
                     containerWidth={containerWidth}
                     isFullscreen={isFullscreen}
+                    onRenderFail={() => setViewMode("native")}
                   />
                 ))}
               </div>
@@ -574,6 +713,7 @@ export default function PdfViewer({
                   rotation={rotation}
                   containerWidth={containerWidth}
                   isFullscreen={isFullscreen}
+                  onRenderFail={() => setViewMode("native")}
                 />
               </div>
             )}
@@ -581,13 +721,15 @@ export default function PdfViewer({
         ) : null}
       </div>
 
-      {/* Bottom Mobile Helper Bar */}
-      <div className="bg-slate-900 border-t border-slate-800 px-3 py-2 flex items-center justify-between text-[11px] text-slate-400 font-mono">
+      {/* Bottom Mobile & iPad Helper Bar */}
+      <div className="bg-slate-900 border-t border-slate-800 px-3 py-2 flex items-center justify-between text-[11px] text-slate-400 font-mono flex-wrap gap-2">
         <div className="flex items-center gap-1.5">
           <Smartphone className="w-3.5 h-3.5 text-blue-400 shrink-0" />
           <span>
-            {viewMode === "scroll"
-              ? `All ${numPages || 1} ${numPages === 1 ? "page" : "pages"} loaded (scroll to read)`
+            {viewMode === "native"
+              ? `iPad WebKit Native Mode (Apple PDF engine)`
+              : viewMode === "scroll"
+              ? `All ${numPages || 1} pages loaded (scroll down to read)`
               : `Page ${currentPage} of ${numPages || 1}`}
           </span>
         </div>
@@ -613,16 +755,15 @@ export default function PdfViewer({
             </div>
           )}
           <a
-            href={blobUrl || pdfData}
+            href={targetPdfUrl}
             target="_blank"
             rel="noopener noreferrer"
             className="text-[10px] text-blue-400 hover:text-blue-300 font-bold flex items-center gap-1 cursor-pointer"
           >
-            <ExternalLink className="w-3 h-3" /> <span>iPad / Mobile Fullscreen</span>
+            <ExternalLink className="w-3 h-3" /> <span>Open in iPad Safari Tab</span>
           </a>
         </div>
       </div>
     </div>
   );
 }
-
