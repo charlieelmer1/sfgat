@@ -10,13 +10,24 @@ export interface RosterItem {
   name: string;
 }
 
+export const SOP_CATEGORIES = [
+  "Index",
+  "Administration",
+  "Operations",
+  "Documentation",
+  "General Safety",
+  "Clinical",
+] as const;
+
+export type SopCategory = typeof SOP_CATEGORIES[number];
+
 export interface DocumentItem {
   id: string;
   title: string;
   type?: "procedures" | "direction"; // Only for protocols
   content: string;
   attachmentName?: string;
-  attachmentType?: "pdf" | "image" | "text";
+  attachmentType?: "pdf" | "image" | "text" | "docx";
   attachmentData?: string; // base64 data URL
   category?: string;
   updatedAt: string;
@@ -324,7 +335,7 @@ export const INITIAL_SOPS: DocumentItem[] = [
   {
     id: "sop-2",
     title: "Minor Incident Patient Release & Refusal (AMA)",
-    category: "Legal / Risk Management",
+    category: "Documentation",
     updatedAt: "2026-02-15",
     content: `Against Medical Advice (AMA) Release Protocol:
 

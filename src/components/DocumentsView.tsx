@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useMemo } from "react";
 import {
   BookOpen,
   FileText,
@@ -13,12 +13,13 @@ import {
   Smartphone,
   AlertCircle,
   Loader2,
-  ExternalLink,
-  Layers,
-  X
+  X,
+  Tag,
+  Filter,
 } from "lucide-react";
-import { DocumentItem } from "../types";
+import { DocumentItem, SOP_CATEGORIES, SopCategory } from "../types";
 import PdfViewer from "./PdfViewer";
+import DocxViewer from "./DocxViewer";
 import { generateProcedurePdf } from "../utils/pdfGenerator";
 
 interface DocumentsViewProps {
@@ -39,23 +40,55 @@ export default function DocumentsView({
   onDeleteDocument,
 }: DocumentsViewProps) {
   const isSupervisor = userRole === "Supervisor";
+  const isSopMode = mode === "sops";
   const [searchTerm, setSearchTerm] = useState("");
+  const [selectedCategoryFilter, setSelectedCategoryFilter] = useState<string>("All");
 
-  // Filter documents based on mode and search term (No sub-type split, No category split)
-  const filteredDocs = documents.filter((doc) => {
-    // SOP mode: documents with no type or explicit sops
-    // Medical Direction mode: documents with type or part of protocols
-    const isSopMode = mode === "sops";
-    const matchesMode = isSopMode ? !doc.type : doc.type !== undefined;
+  // Filter documents based on mode, category (for SOPs), and search term
+  const filteredDocs = useMemo(() => {
+    return documents.filter((doc) => {
+      // SOP mode: documents with no type or explicit sops
+      // Medical Direction mode: documents with type or part of protocols
+      const matchesMode = isSopMode ? !doc.type : doc.type !== undefined;
+      if (!matchesMode) return false;
 
-    if (!matchesMode) return false;
+      // Category filter for SOPs
+      if (isSopMode && selectedCategoryFilter !== "All") {
+        const docCat = doc.category || "Operations";
+        if (docCat !== selectedCategoryFilter) {
+          return false;
+        }
+      }
 
-    // Search query match across title and content
-    return (
-      doc.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      doc.content.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-  });
+      // Search query match across title, content, and category
+      const query = searchTerm.toLowerCase().trim();
+      if (!query) return true;
+
+      const titleMatch = doc.title.toLowerCase().includes(query);
+      const contentMatch = doc.content.toLowerCase().includes(query);
+      const catMatch = doc.category ? doc.category.toLowerCase().includes(query) : false;
+      return titleMatch || contentMatch || catMatch;
+    });
+  }, [documents, isSopMode, selectedCategoryFilter, searchTerm]);
+
+  // Compute category counts for SOP mode
+  const categoryCounts = useMemo(() => {
+    if (!isSopMode) return {};
+    const counts: Record<string, number> = { All: 0 };
+    SOP_CATEGORIES.forEach((cat) => {
+      counts[cat] = 0;
+    });
+
+    documents.forEach((doc) => {
+      if (!doc.type) {
+        counts["All"] = (counts["All"] || 0) + 1;
+        const cat = doc.category || "Operations";
+        counts[cat] = (counts[cat] || 0) + 1;
+      }
+    });
+
+    return counts;
+  }, [documents, isSopMode]);
 
   // Active document selection
   const [selectedDocId, setSelectedDocId] = useState<string | null>(
@@ -64,18 +97,19 @@ export default function DocumentsView({
 
   const selectedDoc = filteredDocs.find((doc) => doc.id === selectedDocId) || filteredDocs[0];
 
-  // Document presentation view mode: "brief" (formatted text) vs "pdf" (interactive PDF canvas viewer)
-  const [docDisplayMode, setDocDisplayMode] = useState<"brief" | "pdf">("brief");
+  // Document presentation view mode: "brief" (formatted text) vs "doc" (PDF / DOCX canvas viewer)
+  const [docDisplayMode, setDocDisplayMode] = useState<"brief" | "doc">("brief");
 
-  // Editor states (Clinical Category and SF Procedure types completely removed)
+  // Editor states
   const [isEditing, setIsEditing] = useState(false);
   const [isAdding, setIsAdding] = useState(false);
   const [editTitle, setEditTitle] = useState("");
   const [editContent, setEditContent] = useState("");
+  const [editCategory, setEditCategory] = useState<SopCategory>("Operations");
 
-  // File upload state for Mobile & iPad support
+  // File upload state for Mobile, iPad, and Desktop (PDF, DOCX, Image, Text)
   const [attachmentName, setAttachmentName] = useState<string>("");
-  const [attachmentType, setAttachmentType] = useState<"pdf" | "image" | "text" | undefined>(undefined);
+  const [attachmentType, setAttachmentType] = useState<"pdf" | "image" | "text" | "docx" | undefined>(undefined);
   const [attachmentData, setAttachmentData] = useState<string>("");
   const [fileSizeInfo, setFileSizeInfo] = useState<string>("");
   const [isProcessingFile, setIsProcessingFile] = useState<boolean>(false);
@@ -86,6 +120,7 @@ export default function DocumentsView({
   const handleStartAdd = () => {
     setEditTitle("");
     setEditContent("");
+    setEditCategory("Operations");
     setAttachmentName("");
     setAttachmentType(undefined);
     setAttachmentData("");
@@ -98,6 +133,7 @@ export default function DocumentsView({
   const handleStartEdit = (doc: DocumentItem) => {
     setEditTitle(doc.title);
     setEditContent(doc.content);
+    setEditCategory((doc.category as SopCategory) || "Operations");
     setAttachmentName(doc.attachmentName || "");
     setAttachmentType(doc.attachmentType);
     setAttachmentData(doc.attachmentData || "");
@@ -112,7 +148,7 @@ export default function DocumentsView({
     setUploadError(null);
     setIsProcessingFile(true);
 
-    const rawName = file.name || "uploaded_document.pdf";
+    const rawName = file.name || "uploaded_document.docx";
     const lowerName = rawName.toLowerCase();
     
     // Auto-populate title if empty
@@ -128,13 +164,16 @@ export default function DocumentsView({
     const sizeStr = sizeInKb > 1024 ? `${(sizeInKb / 1024).toFixed(1)} MB` : `${sizeInKb} KB`;
     setFileSizeInfo(sizeStr);
 
-    // iPadOS / iOS Files app often sets file.type to "" or "application/x-pdf" or "application/octet-stream"
+    // Detect format accurately across iPadOS Files, mobile, and desktop
     const isPdf = lowerName.endsWith(".pdf") || file.type === "application/pdf" || file.type.includes("pdf");
+    const isDocx = lowerName.endsWith(".docx") || lowerName.endsWith(".doc") || file.type.includes("wordprocessingml") || file.type.includes("officedocument");
     const isImage = file.type.startsWith("image/") || /\.(jpe?g|png|webp|gif|svg|heic|heif)$/i.test(lowerName);
 
-    let detectedType: "pdf" | "image" | "text" = "text";
+    let detectedType: "pdf" | "image" | "text" | "docx" = "text";
     if (isPdf) {
       detectedType = "pdf";
+    } else if (isDocx) {
+      detectedType = "docx";
     } else if (isImage) {
       detectedType = "image";
     }
@@ -152,16 +191,20 @@ export default function DocumentsView({
       if (event.target?.result) {
         const result = event.target.result as string;
         setAttachmentData(result);
-        // If content is empty and it's a PDF, add default instruction text
+        // If content is empty, add helpful default instructions based on document type
         if (!editContent.trim()) {
-          setEditContent(`Refer to the official attached multi-page PDF document (${rawName}) for complete clinical procedures and guidelines.`);
+          if (detectedType === "pdf") {
+            setEditContent(`Refer to the official attached multi-page PDF document (${rawName}) for complete procedures and guidelines.`);
+          } else if (detectedType === "docx") {
+            setEditContent(`Refer to the official attached Word document (${rawName}) for complete procedures and guidelines.`);
+          }
         }
       }
       setIsProcessingFile(false);
     };
 
-    // For PDF and images, use Data URL (base64) so binary is preserved
-    if (detectedType === "pdf" || detectedType === "image") {
+    // For PDF, Word .docx, and images, read as Data URL (base64) so binary is preserved
+    if (detectedType === "pdf" || detectedType === "image" || detectedType === "docx") {
       reader.readAsDataURL(file);
     } else {
       reader.readAsText(file);
@@ -203,7 +246,8 @@ export default function DocumentsView({
       const newDoc: DocumentItem = {
         id: `doc-${Date.now()}`,
         title: editTitle,
-        type: mode === "protocols" ? "direction" : undefined, // In medical direction, all are standard medical direction directives
+        type: mode === "protocols" ? "direction" : undefined,
+        category: isSopMode ? editCategory : undefined,
         content: finalContent,
         attachmentName: attachmentName || undefined,
         attachmentType: attachmentType,
@@ -218,6 +262,7 @@ export default function DocumentsView({
         ...selectedDoc,
         title: editTitle,
         type: mode === "protocols" ? "direction" : undefined,
+        category: isSopMode ? editCategory : undefined,
         content: finalContent,
         attachmentName: attachmentName || undefined,
         attachmentType: attachmentType,
@@ -250,18 +295,13 @@ export default function DocumentsView({
   return (
     <div className="space-y-6 max-w-7xl mx-auto font-sans">
       
-      {/* Title block */}
+      {/* Title block - cleaned of previous explanatory subtitles per instructions */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-slate-200 pb-4">
         <div>
           <h2 className="text-2xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
             <BookOpen className="w-6 h-6 text-red-600" />
             {mode === "protocols" ? "Medical Direction" : "Standard Operating Procedures (SOPs)"}
           </h2>
-          <p className="text-xs text-slate-500 font-mono mt-1">
-            {mode === "protocols" 
-              ? "Official hospital & online medical direction directives and clinical protocols"
-              : "Standard operating procedures and operational departmental directives"}
-          </p>
         </div>
         {isSupervisor && !isAdding && !isEditing && (
           <button
@@ -276,7 +316,7 @@ export default function DocumentsView({
       {/* Main Layout Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         
-        {/* Left Column - Search & Listing */}
+        {/* Left Column - Search, Categories & Listing */}
         <div className="lg:col-span-4 space-y-4">
           
           {/* Search Box */}
@@ -293,16 +333,68 @@ export default function DocumentsView({
             />
           </div>
 
+          {/* SOP Category Filter Navigation (Only in SOP mode) */}
+          {isSopMode && (
+            <div className="bg-white border border-slate-200 rounded-lg p-2.5 shadow-sm space-y-1.5">
+              <div className="flex items-center justify-between px-1 pb-1 border-b border-slate-100">
+                <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1">
+                  <Filter className="w-3 h-3 text-blue-900" /> Categories
+                </span>
+                <span className="text-[10px] font-mono text-slate-400">
+                  {filteredDocs.length} SOP{filteredDocs.length === 1 ? "" : "s"}
+                </span>
+              </div>
+              <div className="flex flex-wrap gap-1 pt-0.5">
+                <button
+                  type="button"
+                  onClick={() => setSelectedCategoryFilter("All")}
+                  className={`text-[11px] px-2.5 py-1 rounded-md font-medium cursor-pointer transition-colors flex items-center gap-1.5 ${
+                    selectedCategoryFilter === "All"
+                      ? "bg-blue-900 text-white font-bold shadow-sm"
+                      : "bg-slate-100 hover:bg-slate-200 text-slate-700"
+                  }`}
+                >
+                  <span>All</span>
+                  <span className={`text-[10px] font-mono px-1 rounded ${selectedCategoryFilter === "All" ? "bg-blue-800 text-white" : "bg-slate-200 text-slate-600"}`}>
+                    {categoryCounts["All"] || 0}
+                  </span>
+                </button>
+                {SOP_CATEGORIES.map((cat) => {
+                  const isSelected = selectedCategoryFilter === cat;
+                  const count = categoryCounts[cat] || 0;
+                  return (
+                    <button
+                      key={cat}
+                      type="button"
+                      onClick={() => setSelectedCategoryFilter(cat)}
+                      className={`text-[11px] px-2.5 py-1 rounded-md font-medium cursor-pointer transition-colors flex items-center gap-1.5 ${
+                        isSelected
+                          ? "bg-blue-900 text-white font-bold shadow-sm"
+                          : "bg-slate-100 hover:bg-slate-200 text-slate-700"
+                      }`}
+                    >
+                      <span>{cat}</span>
+                      <span className={`text-[10px] font-mono px-1 rounded ${isSelected ? "bg-blue-800 text-white" : "bg-slate-200 text-slate-600"}`}>
+                        {count}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
           {/* Catalog Listing */}
           <div className="space-y-2 max-h-[550px] overflow-y-auto pr-1">
             {filteredDocs.length === 0 ? (
               <div className="text-center py-10 bg-slate-50 border border-slate-200 rounded">
-                <span className="text-xs text-slate-400 block">No documents found matching search criteria.</span>
+                <span className="text-xs text-slate-400 block">No documents found matching criteria.</span>
               </div>
             ) : (
               filteredDocs.map((doc) => {
                 const isSelected = selectedDoc?.id === doc.id;
                 const hasPdf = doc.attachmentType === "pdf" && doc.attachmentData;
+                const hasDocx = doc.attachmentType === "docx" && doc.attachmentData;
                 return (
                   <button
                     key={doc.id}
@@ -317,15 +409,29 @@ export default function DocumentsView({
                         : "bg-white border-slate-200 hover:bg-slate-50/50"
                     }`}
                   >
-                    <div className="flex items-center justify-between">
-                      <span className="text-[10px] font-mono font-bold text-slate-500">
-                        {doc.updatedAt ? `Updated ${doc.updatedAt}` : "Active"}
-                      </span>
-                      {hasPdf && (
-                        <span className="text-[9px] px-1.5 py-0.5 rounded font-mono font-bold bg-emerald-50 text-emerald-800 border border-emerald-200 flex items-center gap-1">
-                          <FileCheck className="w-3 h-3 text-emerald-600" /> Multi-Page PDF
+                    <div className="flex items-center justify-between flex-wrap gap-1">
+                      <div className="flex items-center gap-1.5">
+                        {isSopMode && doc.category && (
+                          <span className="text-[10px] px-2 py-0.5 rounded font-mono font-bold bg-blue-50 text-blue-900 border border-blue-200">
+                            {doc.category}
+                          </span>
+                        )}
+                        <span className="text-[10px] font-mono font-bold text-slate-500">
+                          {doc.updatedAt ? `Updated ${doc.updatedAt}` : "Active"}
                         </span>
-                      )}
+                      </div>
+                      <div className="flex items-center gap-1">
+                        {hasPdf && (
+                          <span className="text-[9px] px-1.5 py-0.5 rounded font-mono font-bold bg-emerald-50 text-emerald-800 border border-emerald-200 flex items-center gap-1">
+                            <FileCheck className="w-3 h-3 text-emerald-600" /> PDF
+                          </span>
+                        )}
+                        {hasDocx && (
+                          <span className="text-[9px] px-1.5 py-0.5 rounded font-mono font-bold bg-indigo-50 text-indigo-800 border border-indigo-200 flex items-center gap-1">
+                            <FileText className="w-3 h-3 text-indigo-600" /> Word .DOCX
+                          </span>
+                        )}
+                      </div>
                     </div>
                     <h4 className={`font-bold text-xs line-clamp-2 ${isSelected ? "text-blue-900" : "text-slate-800"}`}>
                       {doc.title}
@@ -346,7 +452,7 @@ export default function DocumentsView({
               <div className="flex items-center justify-between border-b border-slate-200 pb-3">
                 <h3 className="text-base font-bold text-slate-900">
                   {isAdding 
-                    ? `Draft New ${mode === "protocols" ? "Medical Direction" : "SOP"} Entry` 
+                    ? `Draft New ${isSopMode ? "SOP" : "Medical Direction"} Entry` 
                     : `Edit: ${editTitle || "Document"}`}
                 </h3>
                 <span className="text-[11px] font-mono text-slate-500">
@@ -354,22 +460,59 @@ export default function DocumentsView({
                 </span>
               </div>
 
-              {/* Title input (Clinical Category removed) */}
+              {/* Title input */}
               <div>
                 <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider font-mono mb-1.5">
-                  Document Title
+                  Document Title <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
                   required
-                  placeholder={mode === "protocols" ? "e.g. Anaphylaxis & Epinephrine Medical Direction" : "e.g. First Aid Station Opening Procedures"}
+                  placeholder={isSopMode ? "e.g. First Aid Station Opening Procedures" : "e.g. Anaphylaxis & Epinephrine Medical Direction"}
                   value={editTitle}
                   onChange={(e) => setEditTitle(e.target.value)}
                   className="w-full bg-slate-50 border border-slate-200 rounded p-2.5 text-xs text-slate-800 focus:outline-none focus:border-blue-900 font-medium"
                 />
               </div>
 
-              {/* Rich text body editor */}
+              {/* SOP Category Selector (Only in SOP mode) */}
+              {isSopMode && (
+                <div>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider font-mono">
+                      SOP Category <span className="text-red-500">*</span>
+                    </label>
+                    <span className="text-[10px] font-mono text-slate-400">
+                      Select one of the 6 official SOP categories
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                    {SOP_CATEGORIES.map((cat) => {
+                      const isSelected = editCategory === cat;
+                      return (
+                        <button
+                          key={cat}
+                          type="button"
+                          onClick={() => setEditCategory(cat)}
+                          className={`p-2.5 rounded-lg text-xs font-semibold text-left transition-all border flex items-center justify-between cursor-pointer ${
+                            isSelected
+                              ? "bg-blue-900 text-white border-blue-900 shadow-sm"
+                              : "bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200"
+                          }`}
+                        >
+                          <div className="flex items-center gap-1.5">
+                            <Tag className={`w-3.5 h-3.5 ${isSelected ? "text-blue-300" : "text-slate-400"}`} />
+                            <span>{cat}</span>
+                          </div>
+                          {isSelected && <span className="w-2 h-2 rounded-full bg-white ml-1.5 shrink-0" />}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Body editor */}
               <div>
                 <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider font-mono mb-1.5">
                   Guideline / Directives Content
@@ -383,11 +526,11 @@ export default function DocumentsView({
                 />
               </div>
 
-              {/* Advanced Attachment Center - Native Mobile & iPad Compatible */}
+              {/* Advanced Attachment Center - PDF & Word .DOCX Enabled */}
               <div className="border border-slate-200 rounded p-4 bg-slate-50 space-y-3">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-semibold text-slate-700 uppercase tracking-wider font-mono">
-                    Upload Multi-Page PDF or Document (iPad & Mobile Ready)
+                    Upload Document (.PDF or .DOCX Word)
                   </span>
                   {fileSizeInfo && (
                     <span className="text-[11px] font-mono text-slate-500 bg-slate-200 px-2 py-0.5 rounded">
@@ -406,44 +549,76 @@ export default function DocumentsView({
                 {isProcessingFile ? (
                   <div className="p-8 text-center bg-white border border-slate-200 rounded flex flex-col items-center justify-center gap-2">
                     <Loader2 className="w-6 h-6 text-blue-900 animate-spin" />
-                    <span className="text-xs font-mono text-slate-600">Reading PDF from iPad / Device memory...</span>
+                    <span className="text-xs font-mono text-slate-600">Reading document from iPad / Device memory...</span>
                   </div>
                 ) : attachmentName && attachmentData ? (
                   <div className="space-y-3">
                     <div className="flex items-center justify-between p-3 bg-white border border-slate-200 rounded shadow-sm">
                       <div className="flex items-center gap-2.5 min-w-0">
-                        {attachmentType === "image" ? (
-                          <Image className="w-5 h-5 text-amber-500 shrink-0" />
+                        {attachmentType === "docx" ? (
+                          <div className="w-8 h-8 rounded bg-indigo-50 border border-indigo-200 text-indigo-700 flex items-center justify-center shrink-0">
+                            <FileText className="w-5 h-5" />
+                          </div>
+                        ) : attachmentType === "pdf" ? (
+                          <div className="w-8 h-8 rounded bg-red-50 border border-red-200 text-red-700 flex items-center justify-center shrink-0">
+                            <FileText className="w-5 h-5" />
+                          </div>
+                        ) : attachmentType === "image" ? (
+                          <div className="w-8 h-8 rounded bg-amber-50 border border-amber-200 text-amber-700 flex items-center justify-center shrink-0">
+                            <Image className="w-5 h-5" />
+                          </div>
                         ) : (
-                          <FileText className="w-5 h-5 text-red-600 shrink-0" />
+                          <div className="w-8 h-8 rounded bg-slate-100 border border-slate-200 text-slate-600 flex items-center justify-center shrink-0">
+                            <FileText className="w-5 h-5" />
+                          </div>
                         )}
                         <div className="truncate">
                           <span className="text-xs text-slate-800 font-bold block truncate">{attachmentName}</span>
                           <span className="text-[10px] text-slate-500 font-mono uppercase">
-                            {attachmentType === "pdf" ? "Multi-Page PDF Ready" : `${attachmentType} file attached`}
+                            {attachmentType === "docx" 
+                              ? "Word Document (.docx) Ready" 
+                              : attachmentType === "pdf" 
+                              ? "Multi-Page PDF Ready" 
+                              : `${attachmentType} file attached`}
                           </span>
                         </div>
                       </div>
                       <button
                         type="button"
                         onClick={removeAttachment}
-                        className="text-xs text-red-600 hover:text-red-800 px-2 py-1 rounded bg-red-50 hover:bg-red-100 transition-colors uppercase font-mono font-bold cursor-pointer flex items-center gap-1"
+                        className="text-xs text-red-600 hover:text-red-800 px-2.5 py-1 rounded bg-red-50 hover:bg-red-100 transition-colors uppercase font-mono font-bold cursor-pointer flex items-center gap-1"
                       >
                         <X className="w-3.5 h-3.5" /> Remove
                       </button>
                     </div>
 
-                    {/* Live preview in edit form */}
+                    {/* Live preview in edit form for PDF */}
                     {attachmentType === "pdf" && (
                       <div className="border border-slate-200 rounded p-2 bg-slate-900">
                         <div className="flex items-center justify-between px-2 py-1 text-[10px] font-mono text-slate-400">
-                          <span>Live Multi-Page Preview:</span>
-                          <span>Scrollable Canvas Engine</span>
+                          <span>Live PDF Preview:</span>
+                          <span>Multi-Page Scrollable</span>
                         </div>
                         <PdfViewer
                           pdfData={attachmentData}
                           fileName={attachmentName}
                           title={editTitle || "Uploaded PDF"}
+                          className="max-h-[360px]"
+                        />
+                      </div>
+                    )}
+
+                    {/* Live preview in edit form for DOCX */}
+                    {attachmentType === "docx" && (
+                      <div className="border border-slate-200 rounded p-2 bg-slate-900">
+                        <div className="flex items-center justify-between px-2 py-1 text-[10px] font-mono text-slate-400">
+                          <span>Live Word (.docx) Preview:</span>
+                          <span>Interactive Document Engine</span>
+                        </div>
+                        <DocxViewer
+                          docxData={attachmentData}
+                          fileName={attachmentName}
+                          title={editTitle || "Uploaded Word Document"}
                           className="max-h-[360px]"
                         />
                       </div>
@@ -454,15 +629,15 @@ export default function DocumentsView({
                   <div>
                     <input
                       type="file"
-                      id="mobile-doc-file-upload"
+                      id="doc-attachment-upload-input"
                       ref={fileInputRef}
                       onChange={handleFileChange}
-                      accept=".pdf,application/pdf,image/*,.png,.jpg,.jpeg,.heic,text/*,.txt"
+                      accept=".pdf,application/pdf,.docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document,.doc,application/msword,image/*,.png,.jpg,.jpeg,.heic,text/*,.txt"
                       className="sr-only"
                     />
 
                     <label
-                      htmlFor="mobile-doc-file-upload"
+                      htmlFor="doc-attachment-upload-input"
                       onDragOver={handleDragOver}
                       onDragLeave={handleDragLeave}
                       onDrop={handleDrop}
@@ -479,20 +654,20 @@ export default function DocumentsView({
 
                         <div>
                           <p className="text-sm font-bold text-slate-800">
-                            Tap to Upload PDF from iPad, Phone, or Computer
+                            Tap to Upload .DOCX or .PDF from iPad, Phone, or Computer
                           </p>
                           <p className="text-xs text-slate-500 mt-0.5">
-                            Supports multi-page PDFs, scans, iCloud Files, and Photos
+                            Supports Microsoft Word (.docx), multi-page PDFs, iCloud Files, and Photos
                           </p>
                         </div>
 
                         <div className="mt-2 inline-flex items-center gap-1.5 px-4 py-2 bg-blue-900 text-white rounded-lg text-xs font-bold shadow hover:bg-blue-800 transition-colors">
                           <Smartphone className="w-4 h-4" />
-                          <span>Choose PDF or Document</span>
+                          <span>Choose .DOCX or .PDF Document</span>
                         </div>
 
                         <span className="text-[10px] text-slate-400 font-mono mt-1">
-                          Accepts .PDF, .JPG, .PNG, .HEIC, .TXT
+                          Accepts .DOCX, .PDF, .JPG, .PNG, .HEIC, .TXT
                         </span>
                       </div>
                     </label>
@@ -516,7 +691,7 @@ export default function DocumentsView({
                   type="submit"
                   className="px-5 py-2.5 bg-blue-900 hover:bg-blue-850 active:bg-blue-950 text-white rounded text-xs cursor-pointer font-bold flex items-center gap-1.5 shadow"
                 >
-                  <Save className="w-4 h-4" /> Save {mode === "protocols" ? "Medical Directive" : "SOP"}
+                  <Save className="w-4 h-4" /> Save {isSopMode ? "SOP" : "Medical Directive"}
                 </button>
               </div>
             </form>
@@ -524,13 +699,23 @@ export default function DocumentsView({
             /* Document Reader Pane */
             <div className="bg-white border border-slate-200 rounded p-6 md:p-8 space-y-6 shadow-sm border-t-4 border-t-blue-900">
               
-              {/* Header block (Clinical Category and SF Procedure tags removed) */}
+              {/* Header block with badges */}
               <div className="flex flex-col sm:flex-row justify-between items-start gap-4 border-b border-slate-200 pb-5">
                 <div>
                   <div className="flex items-center gap-2 mb-2 flex-wrap">
+                    {isSopMode && selectedDoc.category && (
+                      <span className="bg-blue-50 text-blue-900 text-[10px] px-2.5 py-0.5 rounded font-mono font-bold border border-blue-200 flex items-center gap-1">
+                        <Tag className="w-3 h-3 text-blue-700" /> {selectedDoc.category}
+                      </span>
+                    )}
                     {selectedDoc.attachmentType === "pdf" && (
                       <span className="bg-emerald-50 text-emerald-800 text-[10px] px-2 py-0.5 rounded font-mono font-bold border border-emerald-200 flex items-center gap-1">
                         <FileCheck className="w-3.5 h-3.5 text-emerald-600" /> MULTI-PAGE PDF ATTACHED
+                      </span>
+                    )}
+                    {selectedDoc.attachmentType === "docx" && (
+                      <span className="bg-indigo-50 text-indigo-800 text-[10px] px-2 py-0.5 rounded font-mono font-bold border border-indigo-200 flex items-center gap-1">
+                        <FileText className="w-3.5 h-3.5 text-indigo-600" /> WORD (.DOCX) ATTACHED
                       </span>
                     )}
                     <span className="text-[10px] text-slate-400 font-mono uppercase">
@@ -546,7 +731,7 @@ export default function DocumentsView({
                 </div>
 
                 <div className="flex items-center gap-2 flex-wrap">
-                  {/* View Mode Toggle: Brief View vs Multi-Page PDF Preview */}
+                  {/* View Mode Toggle */}
                   <div className="flex bg-slate-100 p-1 rounded border border-slate-200 text-xs font-semibold">
                     <button
                       type="button"
@@ -561,14 +746,22 @@ export default function DocumentsView({
                     </button>
                     <button
                       type="button"
-                      onClick={() => setDocDisplayMode("pdf")}
+                      onClick={() => setDocDisplayMode("doc")}
                       className={`px-3 py-1.5 rounded text-center cursor-pointer transition-all flex items-center gap-1 ${
-                        docDisplayMode === "pdf"
+                        docDisplayMode === "doc"
                           ? "bg-white text-blue-900 shadow-sm font-bold"
                           : "text-slate-500 hover:text-slate-800"
                       }`}
                     >
-                      <FileText className="w-3.5 h-3.5 text-red-600" /> Multi-Page PDF
+                      {selectedDoc.attachmentType === "docx" ? (
+                        <>
+                          <FileText className="w-3.5 h-3.5 text-indigo-600" /> Word Preview
+                        </>
+                      ) : (
+                        <>
+                          <FileText className="w-3.5 h-3.5 text-red-600" /> Document Viewer
+                        </>
+                      )}
                     </button>
                   </div>
 
@@ -593,28 +786,26 @@ export default function DocumentsView({
                 </div>
               </div>
 
-              {/* Main Content Area: Switch between Brief View and Full Multi-Page PDF Preview */}
-              {docDisplayMode === "pdf" ? (
+              {/* Main Content Area: Switch between Brief View and Full Document (PDF / DOCX) Preview */}
+              {docDisplayMode === "doc" ? (
                 <div className="space-y-3 pt-2">
-                  <div className="flex items-center justify-between text-xs text-slate-500 font-mono">
-                    <span className="flex items-center gap-1.5 text-blue-900 font-semibold">
-                      <Smartphone className="w-3.5 h-3.5" />
-                      Mobile & iPad Multi-Page PDF Reader
-                    </span>
-                    <span className="text-[11px] text-slate-400">
-                      {selectedDoc.attachmentName || `${selectedDoc.title}.pdf`}
-                    </span>
-                  </div>
-
-                  <PdfViewer
-                    pdfData={
-                      selectedDoc.attachmentType === "pdf" && selectedDoc.attachmentData
-                        ? selectedDoc.attachmentData
-                        : generateProcedurePdf(selectedDoc)
-                    }
-                    fileName={selectedDoc.attachmentName || `${selectedDoc.title.replace(/\s+/g, "_")}.pdf`}
-                    title={selectedDoc.title}
-                  />
+                  {selectedDoc.attachmentType === "docx" && selectedDoc.attachmentData ? (
+                    <DocxViewer
+                      docxData={selectedDoc.attachmentData}
+                      fileName={selectedDoc.attachmentName || `${selectedDoc.title}.docx`}
+                      title={selectedDoc.title}
+                    />
+                  ) : (
+                    <PdfViewer
+                      pdfData={
+                        selectedDoc.attachmentType === "pdf" && selectedDoc.attachmentData
+                          ? selectedDoc.attachmentData
+                          : generateProcedurePdf(selectedDoc)
+                      }
+                      fileName={selectedDoc.attachmentName || `${selectedDoc.title.replace(/\s+/g, "_")}.pdf`}
+                      title={selectedDoc.title}
+                    />
+                  )}
                 </div>
               ) : (
                 <>
@@ -635,13 +826,12 @@ export default function DocumentsView({
                         </span>
                       </div>
                       
-                      {selectedDoc.attachmentType === "image" && selectedDoc.attachmentData ? (
-                        <div className="bg-slate-50 p-2.5 border border-slate-200 rounded overflow-hidden flex justify-center max-h-[450px]">
-                          <img
-                            src={selectedDoc.attachmentData}
-                            alt={selectedDoc.attachmentName}
-                            referrerPolicy="no-referrer"
-                            className="rounded object-contain max-w-full h-auto"
+                      {selectedDoc.attachmentType === "docx" && selectedDoc.attachmentData ? (
+                        <div className="space-y-3">
+                          <DocxViewer
+                            docxData={selectedDoc.attachmentData}
+                            fileName={selectedDoc.attachmentName}
+                            title={selectedDoc.title}
                           />
                         </div>
                       ) : selectedDoc.attachmentType === "pdf" && selectedDoc.attachmentData ? (
@@ -650,6 +840,15 @@ export default function DocumentsView({
                             pdfData={selectedDoc.attachmentData}
                             fileName={selectedDoc.attachmentName}
                             title={selectedDoc.title}
+                          />
+                        </div>
+                      ) : selectedDoc.attachmentType === "image" && selectedDoc.attachmentData ? (
+                        <div className="bg-slate-50 p-2.5 border border-slate-200 rounded overflow-hidden flex justify-center max-h-[450px]">
+                          <img
+                            src={selectedDoc.attachmentData}
+                            alt={selectedDoc.attachmentName}
+                            referrerPolicy="no-referrer"
+                            className="rounded object-contain max-w-full h-auto"
                           />
                         </div>
                       ) : selectedDoc.attachmentType === "text" && selectedDoc.attachmentData ? (
@@ -669,7 +868,7 @@ export default function DocumentsView({
               <BookOpen className="w-12 h-12 text-slate-300 mb-2.5" />
               <h4 className="font-bold text-slate-700 text-sm">No Document Selected</h4>
               <p className="text-xs max-w-md mt-1 leading-normal">
-                Choose a document from the list on the left or tap "Add" above to create or upload a new PDF.
+                Choose a document from the list on the left or tap "Add" above to create or upload a new document.
               </p>
             </div>
           )}
