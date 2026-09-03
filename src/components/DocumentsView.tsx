@@ -1,4 +1,4 @@
-import React, { useState, useRef, useMemo } from "react";
+import React, { useState, useRef, useMemo, useEffect } from "react";
 import {
   BookOpen,
   FileText,
@@ -19,7 +19,7 @@ import {
   Database,
   CheckCircle2,
 } from "lucide-react";
-import { DocumentItem, SOP_CATEGORIES, SopCategory } from "../types";
+import { DocumentItem, SOP_CATEGORIES, SopCategory, PROTOCOL_CATEGORIES, ProtocolCategory } from "../types";
 import PdfViewer from "./PdfViewer";
 import DocxViewer from "./DocxViewer";
 import { generateProcedurePdf } from "../utils/pdfGenerator";
@@ -46,19 +46,43 @@ export default function DocumentsView({
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategoryFilter, setSelectedCategoryFilter] = useState<string>("All");
 
-  // Filter documents based on mode, category (for SOPs), and search term
+  // Filter documents based on mode, category, and search term
   const filteredDocs = useMemo(() => {
     return documents.filter((doc) => {
-      // SOP mode: documents with no type or explicit sops
-      // Medical Direction mode: documents with type or part of protocols
-      const matchesMode = isSopMode ? !doc.type : doc.type !== undefined;
-      if (!matchesMode) return false;
+      // SOP mode vs Medical Direction mode matching
+      if (isSopMode) {
+        // Must be an SOP: docGroup === 'sops' OR type === 'sop' OR !type (legacy) OR id starts with 'sop-'
+        const isSop =
+          doc.docGroup === "sops" ||
+          doc.type === "sop" ||
+          doc.type === undefined ||
+          (doc.id && doc.id.startsWith("sop-"));
+        if (!isSop) return false;
 
-      // Category filter for SOPs
-      if (isSopMode && selectedCategoryFilter !== "All") {
-        const docCat = doc.category || "Operations";
-        if (docCat !== selectedCategoryFilter) {
-          return false;
+        // Category filter for SOPs
+        if (selectedCategoryFilter !== "All") {
+          const docCat = doc.category || "Operations";
+          if (docCat !== selectedCategoryFilter) {
+            return false;
+          }
+        }
+      } else {
+        // Medical Direction mode: docGroup === 'protocols' OR type in direction/procedures/standing OR id starts with 'prot-'
+        const isProtocol =
+          doc.docGroup === "protocols" ||
+          doc.type === "direction" ||
+          doc.type === "procedures" ||
+          doc.type === "standing" ||
+          (doc.id && doc.id.startsWith("prot-")) ||
+          (doc.type !== "sop" && doc.docGroup !== "sops");
+        if (!isProtocol) return false;
+
+        // Category filter for Medical Direction
+        if (selectedCategoryFilter !== "All") {
+          const docCat = doc.category || "General Clinical";
+          if (docCat !== selectedCategoryFilter) {
+            return false;
+          }
         }
       }
 
@@ -66,26 +90,34 @@ export default function DocumentsView({
       const query = searchTerm.toLowerCase().trim();
       if (!query) return true;
 
-      const titleMatch = doc.title.toLowerCase().includes(query);
-      const contentMatch = doc.content.toLowerCase().includes(query);
+      const titleMatch = (doc.title || "").toLowerCase().includes(query);
+      const contentMatch = (doc.content || "").toLowerCase().includes(query);
       const catMatch = doc.category ? doc.category.toLowerCase().includes(query) : false;
       return titleMatch || contentMatch || catMatch;
     });
   }, [documents, isSopMode, selectedCategoryFilter, searchTerm]);
 
-  // Compute category counts for SOP mode
+  // Compute category counts for active mode
   const categoryCounts = useMemo(() => {
-    if (!isSopMode) return {};
     const counts: Record<string, number> = { All: 0 };
-    SOP_CATEGORIES.forEach((cat) => {
+    const categoriesList = isSopMode ? SOP_CATEGORIES : PROTOCOL_CATEGORIES;
+    categoriesList.forEach((cat) => {
       counts[cat] = 0;
     });
 
     documents.forEach((doc) => {
-      if (!doc.type) {
+      const matchesMode = isSopMode
+        ? (doc.docGroup === "sops" || doc.type === "sop" || doc.type === undefined || (doc.id && doc.id.startsWith("sop-")))
+        : (doc.docGroup === "protocols" || doc.type === "direction" || doc.type === "procedures" || doc.type === "standing" || (doc.id && doc.id.startsWith("prot-")) || (doc.type !== "sop" && doc.docGroup !== "sops"));
+
+      if (matchesMode) {
         counts["All"] = (counts["All"] || 0) + 1;
-        const cat = doc.category || "Operations";
-        counts[cat] = (counts[cat] || 0) + 1;
+        const cat = doc.category || (isSopMode ? "Operations" : "General Clinical");
+        if (counts[cat] !== undefined) {
+          counts[cat] = counts[cat] + 1;
+        } else {
+          counts[cat] = 1;
+        }
       }
     });
 
@@ -93,11 +125,21 @@ export default function DocumentsView({
   }, [documents, isSopMode]);
 
   // Active document selection
-  const [selectedDocId, setSelectedDocId] = useState<string | null>(
-    filteredDocs.length > 0 ? filteredDocs[0].id : null
-  );
+  const [selectedDocId, setSelectedDocId] = useState<string | null>(null);
 
-  const selectedDoc = filteredDocs.find((doc) => doc.id === selectedDocId) || filteredDocs[0];
+  // Synchronize selected document when filtered list changes
+  useEffect(() => {
+    if (filteredDocs.length > 0) {
+      const exists = filteredDocs.some((d) => d.id === selectedDocId);
+      if (!exists) {
+        setSelectedDocId(filteredDocs[0].id);
+      }
+    } else {
+      setSelectedDocId(null);
+    }
+  }, [filteredDocs, selectedDocId]);
+
+  const selectedDoc = filteredDocs.find((doc) => doc.id === selectedDocId) || filteredDocs[0] || null;
 
   // Document presentation view mode: "brief" (formatted text) vs "doc" (PDF / DOCX canvas viewer)
   const [docDisplayMode, setDocDisplayMode] = useState<"brief" | "doc">("brief");
@@ -107,7 +149,8 @@ export default function DocumentsView({
   const [isAdding, setIsAdding] = useState(false);
   const [editTitle, setEditTitle] = useState("");
   const [editContent, setEditContent] = useState("");
-  const [editCategory, setEditCategory] = useState<SopCategory>("Operations");
+  const [editCategory, setEditCategory] = useState<string>("Operations");
+  const [editProtocolType, setEditProtocolType] = useState<"direction" | "procedures" | "standing">("direction");
 
   // File upload state for Mobile, iPad, and Desktop (PDF, DOCX, Image, Text)
   const [attachmentName, setAttachmentName] = useState<string>("");
@@ -123,7 +166,8 @@ export default function DocumentsView({
   const handleStartAdd = () => {
     setEditTitle("");
     setEditContent("");
-    setEditCategory("Operations");
+    setEditCategory(isSopMode ? "Operations" : "Allergic / Immunological");
+    setEditProtocolType("direction");
     setAttachmentName("");
     setAttachmentType(undefined);
     setAttachmentData("");
@@ -136,7 +180,12 @@ export default function DocumentsView({
   const handleStartEdit = (doc: DocumentItem) => {
     setEditTitle(doc.title);
     setEditContent(doc.content);
-    setEditCategory((doc.category as SopCategory) || "Operations");
+    setEditCategory(doc.category || (isSopMode ? "Operations" : "Allergic / Immunological"));
+    if (doc.type && doc.type !== "sop") {
+      setEditProtocolType(doc.type as "direction" | "procedures" | "standing");
+    } else {
+      setEditProtocolType("direction");
+    }
     setAttachmentName(doc.attachmentName || "");
     setAttachmentType(doc.attachmentType);
     setAttachmentData(doc.attachmentData || "");
@@ -243,16 +292,16 @@ export default function DocumentsView({
     if (!editTitle.trim()) return;
 
     const formattedDate = new Date().toISOString().split("T")[0];
-    const finalContent = editContent.trim() || `Refer to the attached document: ${attachmentName || editTitle}`;
-    const docGroup: "protocols" | "sops" = mode === "protocols" ? "protocols" : "sops";
-    const docType: "direction" | "procedures" | "standing" | "sop" = mode === "protocols"
-      ? (selectedDoc?.type || "direction")
-      : "sop";
-    const docCategory = isSopMode ? editCategory : (selectedDoc?.category || "Clinical");
+    const finalContent = editContent.trim() || `Refer to the attached document: ${attachmentName || editTitle.trim()}`;
+    const docGroup: "protocols" | "sops" = isSopMode ? "sops" : "protocols";
+    const docType: "direction" | "procedures" | "standing" | "sop" = isSopMode
+      ? "sop"
+      : editProtocolType;
+    const docCategory = editCategory.trim() || (isSopMode ? "Operations" : "General Clinical");
 
     if (isAdding) {
       const newDoc: DocumentItem = {
-        id: `${mode === "protocols" ? "prot" : "sop"}-${Date.now()}`,
+        id: `${isSopMode ? "sop" : "prot"}-${Date.now()}`,
         title: editTitle.trim(),
         docGroup,
         type: docType,
@@ -265,6 +314,9 @@ export default function DocumentsView({
       if (attachmentData) newDoc.attachmentData = attachmentData;
 
       onAddDocument(newDoc);
+      // Reset filter and search query so newly created document is immediately visible
+      setSelectedCategoryFilter("All");
+      setSearchTerm("");
       setSelectedDocId(newDoc.id);
       setIsAdding(false);
       setSyncNotification(`Document "${editTitle.trim()}" saved to cloud database and synced across all devices.`);
@@ -274,7 +326,7 @@ export default function DocumentsView({
         ...selectedDoc,
         title: editTitle.trim(),
         docGroup: selectedDoc.docGroup || docGroup,
-        type: selectedDoc.type || docType,
+        type: isSopMode ? "sop" : (editProtocolType || selectedDoc.type || "direction"),
         category: docCategory,
         content: finalContent,
         updatedAt: formattedDate,
@@ -296,6 +348,8 @@ export default function DocumentsView({
       }
 
       onUpdateDocument(updatedDoc);
+      setSelectedCategoryFilter("All");
+      setSelectedDocId(updatedDoc.id);
       setIsEditing(false);
       setSyncNotification(`Document "${editTitle.trim()}" updated in cloud database across all devices.`);
       setTimeout(() => setSyncNotification(null), 5000);
@@ -386,56 +440,54 @@ export default function DocumentsView({
             />
           </div>
 
-          {/* SOP Category Filter Navigation (Only in SOP mode) */}
-          {isSopMode && (
-            <div className="bg-white border border-slate-200 rounded-lg p-2.5 shadow-sm space-y-1.5">
-              <div className="flex items-center justify-between px-1 pb-1 border-b border-slate-100">
-                <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1">
-                  <Filter className="w-3 h-3 text-blue-900" /> Categories
-                </span>
-                <span className="text-[10px] font-mono text-slate-400">
-                  {filteredDocs.length} SOP{filteredDocs.length === 1 ? "" : "s"}
-                </span>
-              </div>
-              <div className="flex flex-wrap gap-1 pt-0.5">
-                <button
-                  type="button"
-                  onClick={() => setSelectedCategoryFilter("All")}
-                  className={`text-[11px] px-2.5 py-1 rounded-md font-medium cursor-pointer transition-colors flex items-center gap-1.5 ${
-                    selectedCategoryFilter === "All"
-                      ? "bg-blue-900 text-white font-bold shadow-sm"
-                      : "bg-slate-100 hover:bg-slate-200 text-slate-700"
-                  }`}
-                >
-                  <span>All</span>
-                  <span className={`text-[10px] font-mono px-1 rounded ${selectedCategoryFilter === "All" ? "bg-blue-800 text-white" : "bg-slate-200 text-slate-600"}`}>
-                    {categoryCounts["All"] || 0}
-                  </span>
-                </button>
-                {SOP_CATEGORIES.map((cat) => {
-                  const isSelected = selectedCategoryFilter === cat;
-                  const count = categoryCounts[cat] || 0;
-                  return (
-                    <button
-                      key={cat}
-                      type="button"
-                      onClick={() => setSelectedCategoryFilter(cat)}
-                      className={`text-[11px] px-2.5 py-1 rounded-md font-medium cursor-pointer transition-colors flex items-center gap-1.5 ${
-                        isSelected
-                          ? "bg-blue-900 text-white font-bold shadow-sm"
-                          : "bg-slate-100 hover:bg-slate-200 text-slate-700"
-                      }`}
-                    >
-                      <span>{cat}</span>
-                      <span className={`text-[10px] font-mono px-1 rounded ${isSelected ? "bg-blue-800 text-white" : "bg-slate-200 text-slate-600"}`}>
-                        {count}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
+          {/* Category Filter Navigation (Enabled for both SOPs and Medical Direction) */}
+          <div className="bg-white border border-slate-200 rounded-lg p-2.5 shadow-sm space-y-1.5">
+            <div className="flex items-center justify-between px-1 pb-1 border-b border-slate-100">
+              <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1">
+                <Filter className="w-3 h-3 text-blue-900" /> Categories
+              </span>
+              <span className="text-[10px] font-mono text-slate-400">
+                {filteredDocs.length} {isSopMode ? "SOP" : "Directive"}{filteredDocs.length === 1 ? "" : "s"}
+              </span>
             </div>
-          )}
+            <div className="flex flex-wrap gap-1 pt-0.5">
+              <button
+                type="button"
+                onClick={() => setSelectedCategoryFilter("All")}
+                className={`text-[11px] px-2.5 py-1 rounded-md font-medium cursor-pointer transition-colors flex items-center gap-1.5 ${
+                  selectedCategoryFilter === "All"
+                    ? "bg-blue-900 text-white font-bold shadow-sm"
+                    : "bg-slate-100 hover:bg-slate-200 text-slate-700"
+                }`}
+              >
+                <span>All</span>
+                <span className={`text-[10px] font-mono px-1 rounded ${selectedCategoryFilter === "All" ? "bg-blue-800 text-white" : "bg-slate-200 text-slate-600"}`}>
+                  {categoryCounts["All"] || 0}
+                </span>
+              </button>
+              {(isSopMode ? SOP_CATEGORIES : PROTOCOL_CATEGORIES).map((cat) => {
+                const isSelected = selectedCategoryFilter === cat;
+                const count = categoryCounts[cat] || 0;
+                return (
+                  <button
+                    key={cat}
+                    type="button"
+                    onClick={() => setSelectedCategoryFilter(cat)}
+                    className={`text-[11px] px-2 py-1 rounded-md font-medium cursor-pointer transition-colors flex items-center gap-1.5 ${
+                      isSelected
+                        ? "bg-blue-900 text-white font-bold shadow-sm"
+                        : "bg-slate-100 hover:bg-slate-200 text-slate-700"
+                    }`}
+                  >
+                    <span>{cat}</span>
+                    <span className={`text-[10px] font-mono px-1 rounded ${isSelected ? "bg-blue-800 text-white" : "bg-slate-200 text-slate-600"}`}>
+                      {count}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
 
           {/* Catalog Listing */}
           <div className="space-y-2 max-h-[550px] overflow-y-auto pr-1">
@@ -463,10 +515,21 @@ export default function DocumentsView({
                     }`}
                   >
                     <div className="flex items-center justify-between flex-wrap gap-1">
-                      <div className="flex items-center gap-1.5">
-                        {isSopMode && doc.category && (
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        {doc.category && (
                           <span className="text-[10px] px-2 py-0.5 rounded font-mono font-bold bg-blue-50 text-blue-900 border border-blue-200">
                             {doc.category}
+                          </span>
+                        )}
+                        {!isSopMode && doc.type && (
+                          <span className="text-[9px] px-1.5 py-0.5 rounded font-mono font-bold bg-purple-50 text-purple-900 border border-purple-200 uppercase">
+                            {doc.type === "direction"
+                              ? "Directive"
+                              : doc.type === "procedures"
+                              ? "Procedure"
+                              : doc.type === "standing"
+                              ? "Standing"
+                              : doc.type}
                           </span>
                         )}
                         <span className="text-[10px] font-mono font-bold text-slate-500">
@@ -528,8 +591,8 @@ export default function DocumentsView({
                 />
               </div>
 
-              {/* SOP Category Selector (Only in SOP mode) */}
-              {isSopMode && (
+              {/* Category & Classification Selectors */}
+              {isSopMode ? (
                 <div>
                   <div className="flex items-center justify-between mb-1.5">
                     <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider font-mono">
@@ -561,6 +624,70 @@ export default function DocumentsView({
                         </button>
                       );
                     })}
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {/* Protocol Directive Type Selector */}
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider font-mono mb-1.5">
+                      Protocol Classification <span className="text-red-500">*</span>
+                    </label>
+                    <div className="grid grid-cols-3 gap-2">
+                      {[
+                        { id: "direction", label: "Medical Direction" },
+                        { id: "procedures", label: "Clinical Procedure" },
+                        { id: "standing", label: "Standing Order" },
+                      ].map((t) => {
+                        const isSelected = editProtocolType === t.id;
+                        return (
+                          <button
+                            key={t.id}
+                            type="button"
+                            onClick={() => setEditProtocolType(t.id as any)}
+                            className={`p-2.5 rounded-lg text-xs font-semibold text-center transition-all border cursor-pointer ${
+                              isSelected
+                                ? "bg-blue-900 text-white border-blue-900 shadow-sm"
+                                : "bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200"
+                            }`}
+                          >
+                            {t.label}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Medical Category Selector */}
+                  <div>
+                    <div className="flex items-center justify-between mb-1.5">
+                      <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider font-mono">
+                        Clinical Category <span className="text-red-500">*</span>
+                      </label>
+                      <span className="text-[10px] font-mono text-slate-400">
+                        Select clinical discipline
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                      {PROTOCOL_CATEGORIES.map((cat) => {
+                        const isSelected = editCategory === cat;
+                        return (
+                          <button
+                            key={cat}
+                            type="button"
+                            onClick={() => setEditCategory(cat)}
+                            className={`p-2 rounded-lg text-xs font-semibold text-left transition-all border flex items-center justify-between cursor-pointer ${
+                              isSelected
+                                ? "bg-blue-900 text-white border-blue-900 shadow-sm"
+                                : "bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200"
+                            }`}
+                          >
+                            <span className="truncate">{cat}</span>
+                            {isSelected && <span className="w-1.5 h-1.5 rounded-full bg-white ml-1 shrink-0" />}
+                          </button>
+                        );
+                      })}
+                    </div>
                   </div>
                 </div>
               )}
@@ -756,9 +883,20 @@ export default function DocumentsView({
               <div className="flex flex-col sm:flex-row justify-between items-start gap-4 border-b border-slate-200 pb-5">
                 <div>
                   <div className="flex items-center gap-2 mb-2 flex-wrap">
-                    {isSopMode && selectedDoc.category && (
+                    {selectedDoc.category && (
                       <span className="bg-blue-50 text-blue-900 text-[10px] px-2.5 py-0.5 rounded font-mono font-bold border border-blue-200 flex items-center gap-1">
                         <Tag className="w-3 h-3 text-blue-700" /> {selectedDoc.category}
+                      </span>
+                    )}
+                    {!isSopMode && selectedDoc.type && (
+                      <span className="bg-purple-50 text-purple-900 text-[10px] px-2.5 py-0.5 rounded font-mono font-bold border border-purple-200 uppercase">
+                        {selectedDoc.type === "direction"
+                          ? "Medical Direction"
+                          : selectedDoc.type === "procedures"
+                          ? "Clinical Procedure"
+                          : selectedDoc.type === "standing"
+                          ? "Standing Order"
+                          : selectedDoc.type}
                       </span>
                     )}
                     {selectedDoc.attachmentType === "pdf" && (

@@ -21,6 +21,18 @@ export const SOP_CATEGORIES = [
 
 export type SopCategory = typeof SOP_CATEGORIES[number];
 
+export const PROTOCOL_CATEGORIES = [
+  "Allergic / Immunological",
+  "Environmental",
+  "Trauma",
+  "Cardiac",
+  "Respiratory",
+  "General Clinical",
+  "Pediatric",
+] as const;
+
+export type ProtocolCategory = typeof PROTOCOL_CATEGORIES[number];
+
 export interface DocumentItem {
   id: string;
   title: string;
