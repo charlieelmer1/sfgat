@@ -431,7 +431,7 @@ export default function App() {
   // Navigation Items
   const navItems = [
     { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
-    { id: "protocols", label: "Medical Protocols", icon: BookOpen },
+    { id: "protocols", label: "Medical Direction", icon: BookOpen },
     { id: "sops", label: "SOP's", icon: FileText },
     { id: "directory", label: "Contacts & Extensions", icon: Phone },
     { id: "codes", label: "10-Codes & Signals", icon: Hash },

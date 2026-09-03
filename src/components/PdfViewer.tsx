@@ -36,6 +36,17 @@ interface PdfViewerProps {
   initialZoom?: number;
 }
 
+interface PageCanvasProps {
+  pdfDoc: pdfjsLib.PDFDocumentProxy;
+  pageNumber: number;
+  totalPages: number;
+  scale: number;
+  rotation: number;
+  containerWidth: number;
+  isFullscreen: boolean;
+  key?: React.Key;
+}
+
 // Dedicated Page Renderer Component for multi-page document support
 function PageCanvas({
   pdfDoc,
@@ -45,15 +56,7 @@ function PageCanvas({
   rotation,
   containerWidth,
   isFullscreen,
-}: {
-  pdfDoc: pdfjsLib.PDFDocumentProxy;
-  pageNumber: number;
-  totalPages: number;
-  scale: number;
-  rotation: number;
-  containerWidth: number;
-  isFullscreen: boolean;
-}) {
+}: PageCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [rendering, setRendering] = useState(true);
 
@@ -89,11 +92,16 @@ function PageCanvas({
         context.imageSmoothingEnabled = true;
         context.imageSmoothingQuality = "high";
 
-        await page.render({
+        const renderParams: any = {
           canvasContext: context,
           viewport,
-          transform: pixelRatio !== 1 ? [pixelRatio, 0, 0, pixelRatio, 0, 0] : undefined,
-        }).promise;
+          canvas,
+        };
+        if (pixelRatio !== 1) {
+          renderParams.transform = [pixelRatio, 0, 0, pixelRatio, 0, 0];
+        }
+
+        await (page.render(renderParams) as any).promise;
       } catch (err: any) {
         if (err?.name !== "RenderingCancelledException") {
           console.error(`Error rendering page ${pageNumber}:`, err);
@@ -445,16 +453,18 @@ export default function PdfViewer({
           )}
 
           {/* Mobile Direct Open in Native Viewer (iOS Safari / Android) */}
-          <button
-            type="button"
-            onClick={handleOpenInNewTab}
+          {/* Open in new tab / iPad Safari */}
+          <a
+            href={blobUrl || pdfData}
+            target="_blank"
+            rel="noopener noreferrer"
             className="p-1.5 bg-slate-800 hover:bg-slate-700 text-blue-300 hover:text-white rounded-lg border border-slate-700 cursor-pointer text-xs transition-colors flex items-center gap-1"
-            title="Open in Phone Native Browser/App"
+            title="Open in iPad Safari / Native App"
             aria-label="Open PDF in new tab"
           >
             <ExternalLink className="w-3.5 h-3.5" />
             <span className="hidden md:inline text-[10px] font-mono">Open in Tab</span>
-          </button>
+          </a>
 
           {/* Download PDF */}
           <button
@@ -602,13 +612,14 @@ export default function PdfViewer({
               </button>
             </div>
           )}
-          <button
-            type="button"
-            onClick={handleOpenInNewTab}
+          <a
+            href={blobUrl || pdfData}
+            target="_blank"
+            rel="noopener noreferrer"
             className="text-[10px] text-blue-400 hover:text-blue-300 font-bold flex items-center gap-1 cursor-pointer"
           >
-            <ExternalLink className="w-3 h-3" /> <span>Phone Fullscreen</span>
-          </button>
+            <ExternalLink className="w-3 h-3" /> <span>iPad / Mobile Fullscreen</span>
+          </a>
         </div>
       </div>
     </div>
