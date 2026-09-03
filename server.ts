@@ -175,7 +175,14 @@ async function startServer() {
     }
 
     if (docItem && docItem.id) {
-      if (docItem.type) {
+      const isProt =
+        docItem.docGroup === "protocols" ||
+        docItem.type === "direction" ||
+        docItem.type === "procedures" ||
+        docItem.type === "standing" ||
+        (docItem.id && docItem.id.startsWith("prot-"));
+
+      if (isProt) {
         // Medical Direction protocol
         const existingIndex = (currentDb.protocols || []).findIndex(
           (item: any) => item.id === docItem.id

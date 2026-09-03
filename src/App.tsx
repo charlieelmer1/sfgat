@@ -27,6 +27,7 @@ import {
   DOCUMENTS_COLLECTION,
   handleFirestoreError,
   OperationType,
+  cleanDocumentForFirestore,
 } from "./firebase";
 
 // Types & Initial Data
@@ -186,20 +187,50 @@ export default function App() {
         if (!snapshot.empty) {
           const docList: DocumentItem[] = [];
           snapshot.forEach((d) => {
-            docList.push(d.data() as DocumentItem);
+            const data = d.data() as DocumentItem;
+            docList.push({
+              ...data,
+              id: d.id || data.id,
+            });
           });
-          const fetchedProtocols = docList.filter((d) => d.type !== undefined);
-          const fetchedSops = docList.filter((d) => !d.type);
+
+          // Sort documents by updatedAt descending
+          docList.sort((a, b) => (b.updatedAt || "").localeCompare(a.updatedAt || ""));
+
+          const isProt = (d: DocumentItem) =>
+            d.docGroup === "protocols" ||
+            d.type === "direction" ||
+            d.type === "procedures" ||
+            d.type === "standing" ||
+            (d.id && d.id.startsWith("prot-"));
+
+          const isSop = (d: DocumentItem) =>
+            d.docGroup === "sops" ||
+            d.type === "sop" ||
+            (d.id && d.id.startsWith("sop-")) ||
+            !isProt(d);
+
+          const fetchedProtocols = docList.filter(isProt);
+          const fetchedSops = docList.filter(isSop);
 
           setProtocols(fetchedProtocols.length > 0 ? fetchedProtocols : INITIAL_PROTOCOLS);
           setSops(fetchedSops.length > 0 ? fetchedSops : INITIAL_SOPS);
           setDocumentsLoaded(true);
+
+          try {
+            localStorage.setItem("sfga_ems_protocols", JSON.stringify(fetchedProtocols.length > 0 ? fetchedProtocols : INITIAL_PROTOCOLS));
+            localStorage.setItem("sfga_ems_sops", JSON.stringify(fetchedSops.length > 0 ? fetchedSops : INITIAL_SOPS));
+          } catch (e) {}
         } else {
           // If Firestore documents collection is empty, seed it with INITIAL_PROTOCOLS & INITIAL_SOPS
-          const seedItems = [...INITIAL_PROTOCOLS, ...INITIAL_SOPS];
+          const seedItems = [
+            ...INITIAL_PROTOCOLS.map((p) => ({ ...p, docGroup: "protocols" as const })),
+            ...INITIAL_SOPS.map((s) => ({ ...s, docGroup: "sops" as const, type: "sop" as const })),
+          ];
           for (const item of seedItems) {
             try {
-              await setDoc(doc(db, DOCUMENTS_COLLECTION, item.id), item);
+              const cleaned = cleanDocumentForFirestore(item);
+              await setDoc(doc(db, DOCUMENTS_COLLECTION, item.id), cleaned);
             } catch (e) {
               console.error("Seeding initial document error:", item.id, e);
             }
@@ -362,8 +393,15 @@ export default function App() {
 
   // Protocols & SOPs Document operations (persisted to Firestore collection 'documents' and synced across all devices)
   const handleAddDocument = async (docItem: DocumentItem) => {
+    const isProt =
+      docItem.docGroup === "protocols" ||
+      docItem.type === "direction" ||
+      docItem.type === "procedures" ||
+      docItem.type === "standing" ||
+      (docItem.id && docItem.id.startsWith("prot-"));
+
     // 1. Optimistic local state update
-    if (docItem.type) {
+    if (isProt) {
       setProtocols((prev) => [docItem, ...prev.filter((d) => d.id !== docItem.id)]);
     } else {
       setSops((prev) => [docItem, ...prev.filter((d) => d.id !== docItem.id)]);
@@ -371,8 +409,9 @@ export default function App() {
 
     // 2. Persist to Firestore collection 'documents'
     try {
+      const cleaned = cleanDocumentForFirestore(docItem);
       const docRef = doc(db, DOCUMENTS_COLLECTION, docItem.id);
-      await setDoc(docRef, docItem);
+      await setDoc(docRef, cleaned);
     } catch (err) {
       handleFirestoreError(err, OperationType.CREATE, `${DOCUMENTS_COLLECTION}/${docItem.id}`);
     }
@@ -386,8 +425,15 @@ export default function App() {
   };
 
   const handleUpdateDocument = async (docItem: DocumentItem) => {
+    const isProt =
+      docItem.docGroup === "protocols" ||
+      docItem.type === "direction" ||
+      docItem.type === "procedures" ||
+      docItem.type === "standing" ||
+      (docItem.id && docItem.id.startsWith("prot-"));
+
     // 1. Optimistic local state update
-    if (docItem.type) {
+    if (isProt) {
       setProtocols((prev) => prev.map((item) => (item.id === docItem.id ? docItem : item)));
     } else {
       setSops((prev) => prev.map((item) => (item.id === docItem.id ? docItem : item)));
@@ -395,8 +441,9 @@ export default function App() {
 
     // 2. Persist to Firestore collection 'documents'
     try {
+      const cleaned = cleanDocumentForFirestore(docItem);
       const docRef = doc(db, DOCUMENTS_COLLECTION, docItem.id);
-      await setDoc(docRef, docItem, { merge: true });
+      await setDoc(docRef, cleaned, { merge: true });
     } catch (err) {
       handleFirestoreError(err, OperationType.UPDATE, `${DOCUMENTS_COLLECTION}/${docItem.id}`);
     }
@@ -474,7 +521,8 @@ export default function App() {
       // Re-seed documents collection
       const seedItems = [...INITIAL_PROTOCOLS, ...INITIAL_SOPS];
       seedItems.forEach((item) => {
-        setDoc(doc(db, DOCUMENTS_COLLECTION, item.id), item).catch(console.error);
+        const cleaned = cleanDocumentForFirestore(item);
+        setDoc(doc(db, DOCUMENTS_COLLECTION, item.id), cleaned).catch(console.error);
       });
     } catch (e) {
       console.error("Firestore reset error:", e);

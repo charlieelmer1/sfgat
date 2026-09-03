@@ -40,6 +40,16 @@ export interface FirestoreErrorInfo {
   path: string | null;
 }
 
+export function cleanDocumentForFirestore<T extends Record<string, any>>(docItem: T): Record<string, any> {
+  const cleaned: Record<string, any> = {};
+  for (const [key, value] of Object.entries(docItem)) {
+    if (value !== undefined) {
+      cleaned[key] = value;
+    }
+  }
+  return cleaned;
+}
+
 export function handleFirestoreError(
   error: unknown,
   operationType: OperationType,

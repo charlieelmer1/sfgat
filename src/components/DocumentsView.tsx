@@ -244,39 +244,60 @@ export default function DocumentsView({
 
     const formattedDate = new Date().toISOString().split("T")[0];
     const finalContent = editContent.trim() || `Refer to the attached document: ${attachmentName || editTitle}`;
+    const docGroup: "protocols" | "sops" = mode === "protocols" ? "protocols" : "sops";
+    const docType: "direction" | "procedures" | "standing" | "sop" = mode === "protocols"
+      ? (selectedDoc?.type || "direction")
+      : "sop";
+    const docCategory = isSopMode ? editCategory : (selectedDoc?.category || "Clinical");
 
     if (isAdding) {
       const newDoc: DocumentItem = {
-        id: `doc-${Date.now()}`,
-        title: editTitle,
-        type: mode === "protocols" ? "direction" : undefined,
-        category: isSopMode ? editCategory : undefined,
+        id: `${mode === "protocols" ? "prot" : "sop"}-${Date.now()}`,
+        title: editTitle.trim(),
+        docGroup,
+        type: docType,
+        category: docCategory,
         content: finalContent,
-        attachmentName: attachmentName || undefined,
-        attachmentType: attachmentType,
-        attachmentData: attachmentData || undefined,
         updatedAt: formattedDate,
       };
+      if (attachmentName) newDoc.attachmentName = attachmentName;
+      if (attachmentType) newDoc.attachmentType = attachmentType;
+      if (attachmentData) newDoc.attachmentData = attachmentData;
+
       onAddDocument(newDoc);
       setSelectedDocId(newDoc.id);
       setIsAdding(false);
-      setSyncNotification(`Document "${editTitle}" saved to cloud database and synced across all devices.`);
+      setSyncNotification(`Document "${editTitle.trim()}" saved to cloud database and synced across all devices.`);
       setTimeout(() => setSyncNotification(null), 5000);
     } else if (isEditing && selectedDoc) {
       const updatedDoc: DocumentItem = {
         ...selectedDoc,
-        title: editTitle,
-        type: mode === "protocols" ? "direction" : undefined,
-        category: isSopMode ? editCategory : undefined,
+        title: editTitle.trim(),
+        docGroup: selectedDoc.docGroup || docGroup,
+        type: selectedDoc.type || docType,
+        category: docCategory,
         content: finalContent,
-        attachmentName: attachmentName || undefined,
-        attachmentType: attachmentType,
-        attachmentData: attachmentData || undefined,
         updatedAt: formattedDate,
       };
+      if (attachmentName) {
+        updatedDoc.attachmentName = attachmentName;
+      } else {
+        delete updatedDoc.attachmentName;
+      }
+      if (attachmentType) {
+        updatedDoc.attachmentType = attachmentType;
+      } else {
+        delete updatedDoc.attachmentType;
+      }
+      if (attachmentData) {
+        updatedDoc.attachmentData = attachmentData;
+      } else {
+        delete updatedDoc.attachmentData;
+      }
+
       onUpdateDocument(updatedDoc);
       setIsEditing(false);
-      setSyncNotification(`Document "${editTitle}" updated in cloud database across all devices.`);
+      setSyncNotification(`Document "${editTitle.trim()}" updated in cloud database across all devices.`);
       setTimeout(() => setSyncNotification(null), 5000);
     }
   };

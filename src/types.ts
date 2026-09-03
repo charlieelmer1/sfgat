@@ -24,11 +24,13 @@ export type SopCategory = typeof SOP_CATEGORIES[number];
 export interface DocumentItem {
   id: string;
   title: string;
-  type?: "procedures" | "direction"; // Only for protocols
+  docGroup?: "protocols" | "sops";
+  type?: "procedures" | "direction" | "standing" | "sop"; // protocols or sop
   content: string;
   attachmentName?: string;
   attachmentType?: "pdf" | "image" | "text" | "docx";
   attachmentData?: string; // base64 data URL
+  attachmentUrl?: string;
   category?: string;
   updatedAt: string;
 }
@@ -197,6 +199,7 @@ export const INITIAL_PROTOCOLS: DocumentItem[] = [
   {
     id: "prot-1",
     title: "Anaphylaxis & Severe Allergic Reactions",
+    docGroup: "protocols",
     type: "direction",
     category: "Allergic / Immunological",
     updatedAt: "2026-05-12",
@@ -236,6 +239,7 @@ Immediate Actions:
   {
     id: "prot-2",
     title: "Heat-Related Emergencies & Heat Stroke",
+    docGroup: "protocols",
     type: "procedures",
     category: "Environmental",
     updatedAt: "2026-06-01",
@@ -285,6 +289,7 @@ Treatment:
   {
     id: "prot-3",
     title: "Traumatic Fractures and Extremity Splinting",
+    docGroup: "protocols",
     type: "procedures",
     category: "Trauma",
     updatedAt: "2026-04-10",
@@ -319,6 +324,8 @@ export const INITIAL_SOPS: DocumentItem[] = [
   {
     id: "sop-1",
     title: "Ambulance Staging & Park Gates Ingress",
+    docGroup: "sops",
+    type: "sop",
     category: "Operations",
     updatedAt: "2026-03-20",
     content: `Gate Code / Ingress Instructions for EMS Crews:
@@ -335,6 +342,8 @@ export const INITIAL_SOPS: DocumentItem[] = [
   {
     id: "sop-2",
     title: "Minor Incident Patient Release & Refusal (AMA)",
+    docGroup: "sops",
+    type: "sop",
     category: "Documentation",
     updatedAt: "2026-02-15",
     content: `Against Medical Advice (AMA) Release Protocol:
